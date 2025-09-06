@@ -76,7 +76,7 @@ most startups.)
 |Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Kinesis is serverless, placing the focus on usage rather than on cluster specification and operation.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services, and requires less software and configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
-|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<br/><ol><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li>|
+|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>|
 
 ## Licenses
 
