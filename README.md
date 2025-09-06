@@ -70,11 +70,13 @@ most startups.)
 
 |For this feature|The exercise required|I recommend|Because|
 |:---|:---|:---|:---|
-|API internals|Container|AWS&nbsp;Lambda functions|Much less infrastructure to specify and maintain|
-|Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|If containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2|
-|API presentation|No requirement|API&nbsp;Gateway|Fully integrated with other AWS services|
-|Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Serverless and focused on usage rather than on cluster specification|
-|Infrastructure as code|Terraform|CloudFormation|No extra software to install, secure and update; steers users to simple, AWS-idiomatic resource definitions; covered, at no extra charge, by the existing AWS Support contract; automatic resource naming allows multiple stacks from the same template|
+|API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
+|Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
+|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) and other attacks.|
+|Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Kinesis is serverless, placing the focus on usage rather than on cluster specification and operation.|
+|Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
+|Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services, and requires less software and configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
+|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<br/><ol><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li>|
 
 ## Licenses
 
