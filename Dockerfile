@@ -40,6 +40,11 @@ ENV VIRTUAL_ENV="/hello_api/python_venv"
 RUN python3.12 -m venv "${VIRTUAL_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
+###############################################################################
+# Local file references ( --mount=type=bind,source= , COPY , ADD )
+#
+# Also add files to .dockerignore ; mine ignores files not explicitly listed.
+
 RUN \
   --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
   --mount=type=cache,target=/root/.cache/pip \
@@ -50,6 +55,8 @@ COPY \
   hello_api.openapi.yaml \
   hello_api.py \
   ./
+
+###############################################################################
 
 EXPOSE 8000/tcp
 CMD ["gunicorn", "--log-level", "error", "--error-logfile", "-", "--access-logfile", "-", "--worker-class", "uvicorn.workers.UvicornWorker", "--worker-tmp-dir", "/dev/shm", "--workers", "2",  "--bind", "0.0.0.0:8000", "hello_api:hello_api_app"]
