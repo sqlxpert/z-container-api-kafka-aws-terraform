@@ -12,11 +12,15 @@ RUN \
   dnf install \
     --assumeyes \
     --nodocs \
+    python3.12-3.12.11-2.amzn2023.0.2 \
     shadow-utils-2:4.9-12.amzn2023.0.4 \
-    python3.12-3.12.11-2.amzn2023.0.2
+  && useradd --shell /usr/bin/bash --home /hello_api --user-group --uid 1011 hello_api \
+  && dnf remove \
+    --assumeyes \
+    --setopt=clean_requirements_on_remove=True \
+    shadow-utils-2:4.9-12.amzn2023.0.4
 # shadow-utils provides useradd
 
-RUN useradd --shell /usr/bin/bash --home /hello_api --user-group --uid 1011 hello_api
 USER hello_api
 WORKDIR /hello_api
 
