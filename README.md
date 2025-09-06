@@ -1,2 +1,88 @@
-# z-container-api-kafka-aws-terraform
-Containerized REST API → Kafka → Lambda consumer, on AWS, via Terraform (demonstration only)
+# Containerized API, Kafka Cluster, Lambda Consumer
+
+_Containerized REST API &rarr; managed Kafka cluster &rarr; Lambda consumer,
+on AWS, provisioned via Terraform (demonstration only)_
+
+Jump to:
+[Get Started](#get-started)
+&bull;
+[Commentary](#commentary)
+
+## Diagram
+
+Click to view the architecture diagram:
+
+Forthcoming...
+
+## Get Started
+
+Forthcoming...
+
+## Commentary
+
+I developed this in September,&nbsp;2025, in response to a take-home technical
+exercise for a Senior DevOps Engineer position with a medium-sized US East
+Coast startup.
+
+### Limitations
+
+This is a comprehensive, working solution, though as a demonstration project,
+it is not intended for production use.
+
+Producing this realistic solution required significant free labor. To limit
+free labor, I:
+
+- Used AWS-managed Identity and Access Management (IAM) policies rather than
+  write my trademark custom least-privilege policies. My long-standing
+  open-source projects model least-privilege IAM policies. See, for example,
+  the
+  [CloudFormation deployment role](https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267)
+  and the
+  [Lambda function roles](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L484-L741)
+  in
+  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
+
+- Did not implement encryption in all places, or encryption with
+  customer-managed KMS keys. My other projects model comprehensive encryption
+  support, including support for custom KMS keys, keys housed in a dedicated
+  AWS account, and multi-region keys. See, for example,
+  [`SqsKmsKey`](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora/blob/2da11e1/step_stay_stopped_aws_rds_aurora.yaml#L110-L127)
+  in
+  [github.com/sqlxpert/step-stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora#step-stay-stopped-rds-and-aurora)&nbsp;.
+
+### Recommendations
+
+My professional and ethical commitment is simple: Only as much technology as a
+business...
+
+- needs,
+- can afford,
+- understands (or can learn), and
+- can maintain.
+
+Having worked for startups since 2013, I always recommend _focusing_
+engineering effort during a company's formative years. It is not possible to
+do everything, let alone to be good at everything. Managed services,
+serverless technologies, and low-code solutions free engineers to focus on a
+startup's core product. My recommendations assume that a startup has chosen
+AWS as its cloud provider. (Multi-cloud support is not the core business of
+most startups.)
+
+|For this feature|The exercise required|I recommend|Because|
+|:---|:---|:---|:---|
+|API internals|Container|AWS&nbsp;Lambda functions|Much less infrastructure to specify and maintain|
+|Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|If containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2|
+|API presentation|No requirement|API&nbsp;Gateway|Fully integrated with other AWS services|
+|Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Serverless and focused on usage rather than on cluster specification|
+|Infrastructure as code|Terraform|CloudFormation|No extra software to install, secure and update; steers users to simple, AWS-idiomatic resource definitions; covered, at no extra charge, by the existing AWS Support contract; automatic resource naming allows multiple stacks from the same template|
+
+## Licenses
+
+|Scope|Link|Included Copy|
+|:---|:---|:---|
+|Source code, and source code in documentation|[GNU General Public License (GPL) 3.0](http://www.gnu.org/licenses/gpl-3.0.html)|[LICENSE-CODE.md](/LICENSE-CODE.md)|
+|Documentation, including this ReadMe file|[GNU Free Documentation License (FDL) 1.3](http://www.gnu.org/licenses/fdl-1.3.html)|[LICENSE-DOC.md](/LICENSE-DOC.md)|
+
+Copyright Paul Marcelin
+
+Contact: `marcelin` at `cmu.edu` (replace "at" with `@`)
