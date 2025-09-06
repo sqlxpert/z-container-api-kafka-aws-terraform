@@ -1,0 +1,17 @@
+---
+
+ignored:
+
+  - DL3041
+  # As of 2025-09, this warning appears even though versions are specified in
+  # `dnf install`!
+
+  - DL3040
+  - DL3042
+  # docker build:
+  #   https://docs.docker.com/build/cache/optimize/#use-cache-mounts
+  # dnf:
+  #   https://dnf.readthedocs.io/en/latest/command_ref.html#files
+  #   https://dnf.readthedocs.io/en/latest/conf_ref.html#persistdir-label
+  # pip:
+  #   https://pip.pypa.io/en/stable/topics/caching/#default-paths
