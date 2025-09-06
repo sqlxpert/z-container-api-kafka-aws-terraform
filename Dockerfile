@@ -23,6 +23,7 @@ RUN \
   --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   dnf install \
     --assumeyes \
+    --setopt=install_weak_deps=False \
     --nodocs \
     python3.12-3.12.11-2.amzn2023.0.2 \
     shadow-utils-2:4.9-12.amzn2023.0.4 \
@@ -30,7 +31,7 @@ RUN \
   && dnf remove \
     --assumeyes \
     --setopt=clean_requirements_on_remove=True \
-    shadow-utils-2:4.9-12.amzn2023.0.4
+    shadow-utils
 # shadow-utils provides useradd
 
 USER hello_api
@@ -47,9 +48,10 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 RUN \
   --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
-  --mount=type=cache,target=/root/.cache/pip \
+  --mount=type=cache,target=.cache/pip,uid=1011,gid=1011 \
   pip install --upgrade pip==25.2 \
-  && pip install --requirement /tmp/requirements.txt
+  && pip install --requirement /tmp/requirements.txt \
+  && pip uninstall --yes pip
 
 COPY \
   hello_api.openapi.yaml \
