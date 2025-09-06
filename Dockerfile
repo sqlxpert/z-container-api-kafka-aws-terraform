@@ -4,6 +4,18 @@
 
 FROM amazonlinux:2023.8.20250818.0@sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55
 
+LABEL org.opencontainers.image.base.name="docker.io/library/amazonlinux:2023.8.20250818.0"
+LABEL org.opencontainers.image.base.digest="sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
+
+LABEL org.opencontainers.image.documentation="https://github.com/sqlxpert/z-container-api-kafka-aws-terraform"
+
+LABEL org.opencontainers.image.title="Hello world API"
+LABEL org.opencontainers.image.description="Uses Python 3.12, OpenAPI 3.0, Connexion, Uvicorn workers, Gunicorn"
+LABEL org.opencontainers.image.authors="Paul Marcelin"
+LABEL org.opencontainers.image.vendor="Paul Marcelin"
+LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.source="https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/main/Dockerfile"
+
 SHELL ["/usr/bin/bash", "-c"]
 
 RUN \
@@ -40,4 +52,4 @@ COPY \
   ./
 
 EXPOSE 8000/tcp
-CMD [ "gunicorn", "--log-level", "error", "--error-logfile", "-", "--access-logfile", "-", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker", "hello_api:hello_api_app" ]
+CMD ["gunicorn", "--log-level", "error", "--error-logfile", "-", "--access-logfile", "-", "--worker-class", "uvicorn.workers.UvicornWorker", "--worker-tmp-dir", "/dev/shm", "--workers", "2",  "--bind", "0.0.0.0:8000", "hello_api:hello_api_app"]
