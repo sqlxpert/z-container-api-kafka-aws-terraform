@@ -1,0 +1,88 @@
+---
+# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# GPLv3, Copyright Paul Marcelin
+
+openapi: "3.0.0"
+info:
+  title: Hello API
+  version: "1.0.0"
+paths:
+
+  /healthcheck:
+    get:
+      operationId: hello_api.healthcheck_get
+      responses:
+        "200":
+          description: "Healthy"
+
+  /hello:
+    get:
+      operationId: hello_api.hello_get
+      responses:
+        "200":
+          description: Invariable hello message
+          content:
+            application/json:
+              schema:
+                type: object
+
+                # Intercept bugs:
+                additionalProperties: false
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    nullable: false
+                    minLength: 12  # "Hello World!"
+                    maxLength: 12
+
+  /current_time:
+    get:
+      operationId: hello_api.current_time_get
+      parameters:
+        - name: "name"  # Ambiguous name comes from assessment specification
+          description: String to reflect in hello message
+          in: query
+          required: true
+          schema:
+            type: string
+            nullable: false
+
+            # Secure:
+            minLength: 0
+            maxLength: 249  # See response ... message.maxLength
+            pattern: "^[-_a-zA-Z0-9]*$"  # Prevent injection
+
+      responses:
+        "200":
+          description: Epoch time, hello message with reflected string
+          content:
+            application/json:
+              schema:
+                type: object
+
+                # Intercept bugs:
+                additionalProperties: false
+                required:
+                  - timestamp
+                  - message
+                properties:
+                  timestamp:
+                    type: integer
+                    minimum: 0
+                  message:
+                    type: string
+                    nullable: false
+                    minLength: 6  # "Hello "
+                    maxLength: 255
+                    # See get.parameters.name[name] ... maxLength
+
+  # https://chromium.googlesource.com/devtools/devtools-frontend/+/main/docs/ecosystem/automatic_workspace_folders.md#solution
+  /.well-known/appspecific/com.chrome.devtools.json:
+    get:
+      operationId: hello_api.chrome_devtools_json_get
+      responses:
+        "200":
+          description: "OK"
