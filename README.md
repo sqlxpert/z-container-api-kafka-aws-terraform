@@ -24,6 +24,11 @@ I developed this in September,&nbsp;2025, in response to a take-home technical
 exercise for a Senior DevOps Engineer position with a medium-sized US East
 Coast startup.
 
+### Statement on Artificial Intelligence
+
+This is my own work, produced without the use of artificial intelligence /
+large language model code generation.
+
 ### Limitations
 
 This is a comprehensive, working solution, though as a demonstration project,
@@ -43,12 +48,26 @@ free labor, I:
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
 
 - Did not implement encryption in all places, or encryption with
-  customer-managed KMS keys. My other projects model comprehensive encryption
-  support, including support for custom KMS keys, keys housed in a dedicated
-  AWS account, and multi-region keys. See, for example,
+  customer-managed KMS keys. My pre-existing projects model comprehensive
+  encryption support, including support for custom KMS keys, keys housed in a
+  dedicated AWS account, and multi-region keys. See, for example,
   [`SqsKmsKey`](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora/blob/2da11e1/step_stay_stopped_aws_rds_aurora.yaml#L110-L127)
   in
   [github.com/sqlxpert/step-stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora#step-stay-stopped-rds-and-aurora)&nbsp;.
+
+- Minimized parameterization (Terraform variables and outputs, for the
+  purpose of this exercise). My pre-existing projects model extensive
+  parameterization for flexibility and template re-use, plus defaults for
+  simplicity, complete parameter descriptions, and grouping of essential and
+  non-essential parameters. See, for example,
+  [CloudFormation Parameters and Metadata](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L399)
+  in
+  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
+  I have also modeled the more AWS-idiomatic and scalable approach of using
+  Systems Manager Parameter Store and path hierarchies. See
+  [`ClientSecGrpIdParam`](https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/1eb9028/10-minute-aws-client-vpn.yaml#L348-L362)
+  in
+  [github.com/sqlxpert/10-minute-aws-client-vpn](https://github.com/sqlxpert/10-minute-aws-client-vpn#10-minute-aws-client-vpn)&nbsp;.
 
 ### Recommendations
 
@@ -82,8 +101,8 @@ most startups.)
 
 |Scope|Link|Included Copy|
 |:---|:---|:---|
-|Source code, and source code in documentation|[GNU General Public License (GPL) 3.0](http://www.gnu.org/licenses/gpl-3.0.html)|[LICENSE-CODE.md](/LICENSE-CODE.md)|
-|Documentation, including this ReadMe file|[GNU Free Documentation License (FDL) 1.3](http://www.gnu.org/licenses/fdl-1.3.html)|[LICENSE-DOC.md](/LICENSE-DOC.md)|
+|Source code, and source code in documentation|[GNU General Public License (GPL) 3.0](http://www.gnu.org/licenses/gpl-3.0.html)|[LICENSE-CODE.md](/LICENSE_CODE.md)|
+|Documentation, including this ReadMe file|[GNU Free Documentation License (FDL) 1.3](http://www.gnu.org/licenses/fdl-1.3.html)|[LICENSE-DOC.md](/LICENSE_DOC.md)|
 
 Copyright Paul Marcelin
 
