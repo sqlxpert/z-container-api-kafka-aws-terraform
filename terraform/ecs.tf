@@ -83,3 +83,28 @@ resource "aws_ecs_task_definition" "hello_api" {
     }
   ])
 }
+
+resource "aws_ecs_service" "hello_api" {
+  name = "hello_api"
+
+  cluster = aws_ecs_cluster.hello_api.id
+
+  task_definition = aws_ecs_task_definition.hello_api.arn
+
+  launch_type      = "FARGATE"
+  platform_version = "1.4.0"
+  desired_count    = var.hello_api_aws_ecs_service_desired_count_tasks
+  propagate_tags   = "NONE"
+
+  availability_zone_rebalancing = "ENABLED"
+  network_configuration {
+    subnets = [
+      for data_aws_subnet in data.aws_subnet.private_list : data_aws_subnet.id
+    ]
+    security_groups = [
+      data.aws_security_group.hello_api_load_balancer_target.id
+    ]
+    assign_public_ip = true # TODO: remove
+    # assign_public_ip = false
+  }
+}

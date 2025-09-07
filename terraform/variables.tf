@@ -15,3 +15,10 @@ variable "hello_api_aws_ecr_image_tag" {
 
   default = "1.0.0"
 }
+
+variable "hello_api_aws_ecs_service_desired_count_tasks" {
+  type        = number
+  description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the service."
+
+  default = 3
+}
