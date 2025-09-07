@@ -4,3 +4,10 @@ variable "aws_region_main" {
 
   default = "us-west-2"
 }
+
+variable "hello_api_aws_ecr_image_tag" {
+  type        = string
+  description = "Version tag of hello_api image in Elastic Container Registry repository"
+
+  default = "1.0.0"
+}
