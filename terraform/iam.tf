@@ -81,6 +81,7 @@ locals {
       "AmazonEC2ContainerRegistryFullAccess",
       "CloudWatchLogsFullAccess",
       "AmazonECS_FullAccess",
+      "AmazonEC2FullAccess",
       "AmazonVPCFullAccess",
       "AmazonMSKFullAccess"
     ]

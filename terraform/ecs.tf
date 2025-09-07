@@ -132,15 +132,11 @@ resource "aws_ecs_service" "hello_api" {
 
   availability_zone_rebalancing = "ENABLED"
   network_configuration {
-    subnets = [
-      for data_aws_subnet in data.aws_subnet.private_list : data_aws_subnet.id
-      # TODO: Replace with resource references, when new VPC is defined
-    ]
+    subnets          = module.hello_api_vpc_subnets.private_subnet_ids
+    assign_public_ip = false
+
     security_groups = [
-      data.aws_security_group.hello_api_load_balancer_target.id
-      # TODO: Replace with resource references, when new VPC is defined
+      module.hello_api_vpc.vpc_default_security_group_id # TODO: define custom
     ]
-    assign_public_ip = true # TODO: remove
-    # assign_public_ip = false
   }
 }
