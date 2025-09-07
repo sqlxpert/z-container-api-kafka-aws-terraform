@@ -37,17 +37,17 @@ free labor, I:
 
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
-  power is low. The level of detail always seems too high or too low for the
-  audience. For example,
+  power is weak. The level of detail always seems too high for the audience.
+  For example,
   [aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment)
   resources will be drawn with arrows between a role and multiple _AWS-managed_
-  policies, when the role and a list of the policy names could just be enclosed
-  in a box, because the names are thoroughly descriptive. Schooled decades ago
-  by Dr. Edward Tufte's
+  policies, when it would be sufficient to put the role and a list of the
+  attached policies in a box, because the policy names are descriptive.
+  Schooled decades ago by Dr. Edward Tufte's
   [_The Visual Display of Quantitative Information_](https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information),
   I have produced compact, attractive, information-rich diagrams for my
   pre-existing open-source projects. They address multiple audiences and were
-  easy to draw using Apple's free "Freeform" application. Examples:
+  easy to draw using Apple's free "Freeform" application. Click for examples:
   <br/>
   <br/>
   [<img src="https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow-thumb.png" alt="An Event Bridge Scheduler rule triggers the 'Find' Amazon Web Services Lambda function every 10 minutes. The function calls 'describe' methods, checks the resource records returned for tag keys such as 'sched-start', and uses regular expressions to check the tag values for day, hour, and minute terms. Current day and time elements are inserted into the regular expressions using 'strftime'. If there is a match, the function sends a message to a Simple Queue Service queue. The 'Do' function, triggered in response, checks whether the message has expired. If not, this function calls the method indicated by the message attributes, passing the message body for the parameters. If the request is successful or a known exception occurs and it is not okay to re-try, the function is done. If an unknown exception occurs, the message remains in the operation queue, becoming visibile again after 90 seconds. After 3 tries, a message goes from the operation queue to the error (dead letter) queue." height="144" />](https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow.png?raw=true "Architecture diagram and flowchart for Lights Off, AWS!")
@@ -72,7 +72,7 @@ free labor, I:
   in
   [github.com/sqlxpert/step-stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora#step-stay-stopped-rds-and-aurora)&nbsp;.
 
-- **Minimized parameterization** (Terraform variables and outputs, for the
+- **Kept parameters to a minimum** (Terraform variables and outputs, for the
   purpose of this exercise). My pre-existing projects model extensive
   parameterization for flexibility and template re-use, plus defaults for
   simplicity, complete parameter descriptions, and grouping of essential and
