@@ -1,3 +1,7 @@
+# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# GPLv3, Copyright Paul Marcelin
+
 output "hello_api_aws_ecr_registry_uri" {
   value       = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region_main}.amazonaws.com"
   description = "URI of registry containing hello_api Elastic Container Registry repository"
