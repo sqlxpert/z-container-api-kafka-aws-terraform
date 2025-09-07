@@ -32,8 +32,8 @@ large language model code generation.
 This is a comprehensive, working solution, though as a demonstration project,
 it is not intended for production use.
 
-Producing this realistic solution required significant free labor. To limit
-free labor, I:
+Producing a working solution required significant free labor. To limit free
+labor, I:
 
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
@@ -42,8 +42,8 @@ free labor, I:
   [aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment)
   resources will be drawn with arrows between a role and multiple _AWS-managed_
   policies, when it would be sufficient to put the role and a list of the
-  attached policies in a box, because the policy names are descriptive.
-  Schooled decades ago by Dr. Edward Tufte's
+  attached policies in a box, because AWS chooses descriptive policy names.
+  Schooled by Dr. Edward Tufte's
   [_The Visual Display of Quantitative Information_](https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information),
   I have produced compact, attractive, information-rich diagrams for my
   pre-existing open-source projects. They address multiple audiences and were
@@ -66,17 +66,17 @@ free labor, I:
 
 - **Did not implement encryption in all places, or encryption with
   customer-managed KMS keys.** My pre-existing projects model comprehensive
-  encryption support, including support for custom KMS keys, keys housed in a
-  dedicated AWS account, and multi-region keys. See, for example,
+  encryption, including support for custom KMS keys, keys housed in a dedicated
+  AWS account, and multi-region keys. See, for example,
   [`SqsKmsKey`](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora/blob/2da11e1/step_stay_stopped_aws_rds_aurora.yaml#L110-L127)
   in
   [github.com/sqlxpert/step-stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora#step-stay-stopped-rds-and-aurora)&nbsp;.
 
 - **Kept parameters to a minimum** (Terraform variables and outputs, for the
   purpose of this exercise). My pre-existing projects model extensive
-  parameterization for flexibility and template re-use, plus defaults for
-  simplicity, complete parameter descriptions, and grouping of essential and
-  non-essential parameters. See, for example, CloudFormation
+  parameterization for flexibility and template re-use, plus simple defaults,
+  complete parameter descriptions, and grouping of essential and non-essential
+  parameters. See, for example, CloudFormation
   [`Parameters`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L288)
   and
   [`Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L290-L399)
@@ -110,7 +110,7 @@ most startups.)
 |:---|:---|:---|:---|
 |API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
 |Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
-|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) and other attacks.|
+|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
 |Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Kinesis is serverless, which places the focus on usage rather than on cluster specification and operation.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|

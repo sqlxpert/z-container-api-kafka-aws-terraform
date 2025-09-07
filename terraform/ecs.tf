@@ -10,18 +10,30 @@ resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
   retention_in_days = 3
 }
 
+# Pre-create to be sure this is tracked
+resource "aws_cloudwatch_log_group" "hello_api_ecs_task" {
+  name         = "hello_api_ecs_task"
+  skip_destroy = true
+
+  log_group_class   = "STANDARD"
+  retention_in_days = 3
+}
+
 resource "aws_ecs_cluster" "hello_api" {
   name = "hello_api"
 
-  configuration {
-    execute_command_configuration {
-      logging = "OVERRIDE"
-      log_configuration {
-        cloud_watch_encryption_enabled = true
-        cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello_api_ecs_cluster.name
-      }
-    }
-  }
+  # For future use, if it's necessary to run arbitrary commands in containers.
+  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html
+  #
+  # configuration {
+  #   execute_command_configuration {
+  #     logging = "OVERRIDE"
+  #     log_configuration {
+  #       cloud_watch_encryption_enabled = true
+  #       cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello_api_ecs_cluster.name
+  #     }
+  #   }
+  # }
 }
 
 resource "aws_ecs_cluster_capacity_providers" "hello_api" {
@@ -88,6 +100,20 @@ resource "aws_ecs_task_definition" "hello_api" {
           hostPort      = 8000
         }
       ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-region = var.aws_region_main
+
+          awslogs-create-group  = "true" # String (!), and "false" not allowed
+          awslogs-group         = aws_cloudwatch_log_group.hello_api_ecs_task.name
+          awslogs-stream-prefix = "awslogs-stream-prefix"
+
+          mode            = "non-blocking"
+          max-buffer-size = "10m"
+        }
+      }
     }
   ])
 }
