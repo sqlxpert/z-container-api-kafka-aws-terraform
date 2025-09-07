@@ -27,12 +27,20 @@ resource "aws_ecs_cluster" "hello_api" {
 resource "aws_ecs_cluster_capacity_providers" "hello_api" {
   cluster_name = aws_ecs_cluster.hello_api.name
 
-  capacity_providers = ["FARGATE_SPOT"]
+  capacity_providers = [
+    "FARGATE_SPOT",
+    "FARGATE"
+  ]
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
     base              = 1
     weight            = 100
+  }
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 0 # All spot, for a low-cost demonstration!
   }
 }
 
@@ -100,9 +108,11 @@ resource "aws_ecs_service" "hello_api" {
   network_configuration {
     subnets = [
       for data_aws_subnet in data.aws_subnet.private_list : data_aws_subnet.id
+      # TODO: Replace with resource references, when new VPC is defined
     ]
     security_groups = [
       data.aws_security_group.hello_api_load_balancer_target.id
+      # TODO: Replace with resource references, when new VPC is defined
     ]
     assign_public_ip = true # TODO: remove
     # assign_public_ip = false

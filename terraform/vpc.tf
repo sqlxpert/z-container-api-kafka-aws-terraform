@@ -2,6 +2,9 @@
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
+###############################################################################
+# TODO: Define new VPC, subnets, and security groups
+
 data "aws_security_group" "hello_api_load_balancer_target" {
   id = "sg-0e9e7260c977a2714"
 }
@@ -15,3 +18,4 @@ data "aws_subnet" "private_list" {
 
   id = each.value
 }
+###############################################################################
