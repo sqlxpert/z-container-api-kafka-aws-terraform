@@ -24,9 +24,9 @@ I developed this in September,&nbsp;2025, in response to a take-home technical
 exercise for a Senior DevOps Engineer position with a medium-sized US East
 Coast startup.
 
-### Statement on Artificial Intelligence
+### Statement on AI, LLMs and Code Generation
 
-This is my own work, produced without the use of artificial intelligence /
+This is my own work, produced _without_ the use of artificial intelligence /
 large language model code generation.
 
 ### Limitations
@@ -60,7 +60,7 @@ free labor, I:
   parameterization for flexibility and template re-use, plus defaults for
   simplicity, complete parameter descriptions, and grouping of essential and
   non-essential parameters. See, for example,
-  [CloudFormation Parameters and Metadata](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L399)
+  [CloudFormation `Parameters` and `Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L399)
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
   I have also modeled the more AWS-idiomatic and scalable approach of using
@@ -94,15 +94,15 @@ most startups.)
 |API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) and other attacks.|
 |Data streaming|Apache&nbsp;Kafka, via&nbsp;MSK|Kinesis|Kinesis is serverless, placing the focus on usage rather than on cluster specification and operation.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
-|Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services, and requires less software and configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
+|Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
 |Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>|
 
 ## Licenses
 
 |Scope|Link|Included Copy|
 |:---|:---|:---|
-|Source code, and source code in documentation|[GNU General Public License (GPL) 3.0](http://www.gnu.org/licenses/gpl-3.0.html)|[LICENSE-CODE.md](/LICENSE_CODE.md)|
-|Documentation, including this ReadMe file|[GNU Free Documentation License (FDL) 1.3](http://www.gnu.org/licenses/fdl-1.3.html)|[LICENSE-DOC.md](/LICENSE_DOC.md)|
+|Source code, and source code in documentation|[GNU General Public License (GPL) 3.0](http://www.gnu.org/licenses/gpl-3.0.html)|[LICENSE_CODE.md](/LICENSE_CODE.md)|
+|Documentation, including this ReadMe file|[GNU Free Documentation License (FDL) 1.3](http://www.gnu.org/licenses/fdl-1.3.html)|[LICENSE_DOC.md](/LICENSE_DOC.md)|
 
 Copyright Paul Marcelin
 
