@@ -59,8 +59,10 @@ free labor, I:
   purpose of this exercise). My pre-existing projects model extensive
   parameterization for flexibility and template re-use, plus defaults for
   simplicity, complete parameter descriptions, and grouping of essential and
-  non-essential parameters. See, for example,
-  [CloudFormation `Parameters` and `Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L399)
+  non-essential parameters. See, for example, CloudFormation
+  [`Parameters`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L288)
+  and
+  [`Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L290-L399)
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
   I have also modeled the more AWS-idiomatic and scalable approach of using
