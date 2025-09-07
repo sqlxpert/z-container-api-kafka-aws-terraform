@@ -15,7 +15,6 @@ data "aws_iam_policy_document" "hello_api_maintain_assume_role" {
     actions = ["sts:AssumeRole"]
   }
 }
-
 resource "aws_iam_role" "hello_api_maintain" {
   name = "hello_api_maintain"
 
@@ -24,51 +23,6 @@ resource "aws_iam_role" "hello_api_maintain" {
 resource "aws_iam_instance_profile" "hello_api_maintain" {
   name = "hello_api_maintain"
   role = aws_iam_role.hello_api_maintain.name
-}
-
-data "aws_iam_policy" "iam_full_access" {
-  name = "IAMFullAccess"
-}
-data "aws_iam_policy" "amazon_ssm_managed_instance_core" {
-  name = "AmazonSSMManagedInstanceCore"
-}
-data "aws_iam_policy" "amazon_ec2_container_registry_full_access" {
-  name = "AmazonEC2ContainerRegistryFullAccess"
-}
-data "aws_iam_policy" "cloud_watch_logs_full_access" {
-  name = "CloudWatchLogsFullAccess"
-}
-data "aws_iam_policy" "amazon_ecs_full_access" {
-  name = "AmazonECS_FullAccess"
-}
-data "aws_iam_policy" "amazon_msk_full_access" {
-  name = "AmazonMSKFullAccess"
-}
-
-
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_iam_full_access" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.iam_full_access.arn
-}
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_amazon_ssm_managed_instance_core" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.amazon_ssm_managed_instance_core.arn
-}
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_amazon_ec2_container_registry_full_access" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.amazon_ec2_container_registry_full_access.arn
-}
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_cloud_watch_logs_full_access" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.cloud_watch_logs_full_access.arn
-}
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_amazon_ecs_full_access" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.amazon_ecs_full_access.arn
-}
-resource "aws_iam_role_policy_attachment" "hello_api_maintain_amazon_msk_full_access" {
-  role       = aws_iam_role.hello_api_maintain.name
-  policy_arn = data.aws_iam_policy.amazon_msk_full_access.arn
 }
 
 
@@ -86,13 +40,6 @@ resource "aws_iam_role" "hello_api_ecs_task_execution" {
   name = "hello_api_ecs_task_execution"
 
   assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_execution_assume_role.json
-}
-data "aws_iam_policy" "amazon_ecs_task_execution_role_policy" {
-  name = "AmazonECSTaskExecutionRolePolicy"
-}
-resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_execution_amazon_ecs_task_execution_role_policy" {
-  role       = aws_iam_role.hello_api_ecs_task_execution.name
-  policy_arn = data.aws_iam_policy.amazon_ecs_task_execution_role_policy.arn
 }
 
 
@@ -122,7 +69,70 @@ resource "aws_iam_role" "hello_api_ecs_task" {
 
   assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_assume_role.json
 }
-resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_amazon_msk_full_access" {
-  role       = aws_iam_role.hello_api_ecs_task.name
-  policy_arn = data.aws_iam_policy.amazon_msk_full_access.arn
+
+
+
+locals {
+  iam_role_name_to_aws_managed_iam_policy_names = {
+
+    "hello_api_maintain" = [
+      "IAMFullAccess",
+      "AmazonSSMManagedInstanceCore",
+      "AmazonEC2ContainerRegistryFullAccess",
+      "CloudWatchLogsFullAccess",
+      "AmazonECS_FullAccess",
+      "AmazonVPCFullAccess",
+      "AmazonMSKFullAccess"
+    ]
+
+    "hello_api_ecs_task_execution" = [
+      "AmazonECSTaskExecutionRolePolicy"
+    ]
+
+    "hello_api_ecs_task" = [
+      "AmazonMSKFullAccess"
+    ]
+  }
+
+  # The map seeds aws_iam_role_policy_attachment resources, but it could also
+  # seed aws_iam_role resources. Expressing role trust policies in HCL object
+  # form and calling jsonencode() instead of expressing them in HCL block form
+  # in data.aws_iam_policy_document is the tradeoff.
+
+  iam_role_policy_attachments = flatten([
+    for iam_role_name, aws_managed_iam_policy_names in local.iam_role_name_to_aws_managed_iam_policy_names : [
+      for aws_managed_iam_policy_name in aws_managed_iam_policy_names :
+      {
+        iam_role_name               = iam_role_name,
+        aws_managed_iam_policy_name = aws_managed_iam_policy_name
+      }
+    ]
+  ])
+
+  iam_role_policy_attachments_delimiter = "|"
+  iam_role_policy_attachment_strings = toset([
+    for iam_role_policy_attachment in local.iam_role_policy_attachments :
+    join("", [
+      iam_role_policy_attachment.iam_role_name,
+      local.iam_role_policy_attachments_delimiter,
+      iam_role_policy_attachment.aws_managed_iam_policy_name
+    ])
+  ])
+
+  aws_managed_iam_policy_names = toset([
+    for iam_role_policy_attachment in local.iam_role_policy_attachments :
+    iam_role_policy_attachment.aws_managed_iam_policy_name
+  ])
+}
+
+data "aws_iam_policy" "aws_managed" {
+  for_each = local.aws_managed_iam_policy_names
+
+  name = each.key
+}
+resource "aws_iam_role_policy_attachment" "aws_managed" {
+  for_each = local.iam_role_policy_attachment_strings
+
+  role       = split(local.iam_role_policy_attachments_delimiter, each.key)[0]
+  policy_arn = data.aws_iam_policy.aws_managed[split(local.iam_role_policy_attachments_delimiter, each.key)[1]].arn
 }
