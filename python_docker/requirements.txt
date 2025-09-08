@@ -3,5 +3,7 @@
 # GPLv3, Copyright Paul Marcelin
 
 connexion==3.2.0
+aws-msk-iam-sasl-signer-python==1.0.2
+kafka-python==2.2.15
 uvicorn==0.35.0
 gunicorn==23.0.0

@@ -93,6 +93,17 @@ resource "aws_ecs_task_definition" "hello_api" {
         interval    = 005 # seconds
       }
 
+      environment = [
+        {
+          name  = "AWS_REGION"
+          value = var.aws_region_main
+        },
+        {
+          name  = "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP"
+          value = aws_msk_serverless_cluster.hello_api.bootstrap_brokers_sasl_iam
+        }
+      ]
+
       portMappings = [
         {
           containerPort = 8000

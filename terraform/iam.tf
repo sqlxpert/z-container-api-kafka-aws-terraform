@@ -88,6 +88,62 @@ resource "aws_iam_role" "hello_api_ecs_task" {
 
 
 
+# https://docs.aws.amazon.com/msk/latest/developerguide/create-iam-role.html
+# https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-actions-as-permissions
+# https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
+
+locals {
+  aws_msk_serverless_cluster_hello_api_arn_no_uuid = replace(
+    aws_msk_serverless_cluster.hello_api.arn,
+    aws_msk_serverless_cluster.hello_api.cluster_uuid,
+    "*"
+  )
+}
+
+data "aws_iam_policy_document" "kafka_write" {
+  statement {
+    actions = [
+      "kafka-cluster:Connect",
+      "kafka-cluster:DescribeCluster"
+    ]
+    resources = [
+      aws_msk_serverless_cluster.hello_api.arn
+    ]
+  }
+  statement {
+    actions = [
+      "kafka-cluster:CreateTopic",
+      "kafka-cluster:DescribeTopic",
+      "kafka-cluster:WriteData",
+      "kafka-cluster:ReadData"
+    ]
+    resources = [
+      replace(local.aws_msk_serverless_cluster_hello_api_arn_no_uuid, ":cluster/", ":topic/")
+    ]
+  }
+  statement {
+    actions = [
+      "kafka-cluster:AlterGroup",
+      "kafka-cluster:DescribeGroup"
+    ]
+    resources = [
+      replace(local.aws_msk_serverless_cluster_hello_api_arn_no_uuid, ":cluster/", ":group/")
+    ]
+  }
+}
+resource "aws_iam_policy" "kafka_write" {
+  name        = "kafka_write"
+  description = "MSK cluster: create, write to any topic"
+
+  policy = data.aws_iam_policy_document.kafka_write.json
+}
+resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
+  role       = aws_iam_role.hello_api_ecs_task.name
+  policy_arn = aws_iam_policy.kafka_write.arn
+}
+
+
+
 locals {
   iam_role_name_to_aws_managed_iam_policy_names = {
 
