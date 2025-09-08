@@ -83,6 +83,7 @@ locals {
       "AmazonECS_FullAccess",
       "AmazonEC2FullAccess",
       "AmazonVPCFullAccess",
+      "AWSCertificateManagerFullAccess",
       "AmazonMSKFullAccess"
     ]
 

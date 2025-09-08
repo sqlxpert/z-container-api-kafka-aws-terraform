@@ -114,7 +114,7 @@ module "hello_api_vpc_subnets" {
 
   public_route_table_enabled            = true
   public_route_table_per_subnet_enabled = false
-  nat_gateway_enabled                   = true
+  nat_gateway_enabled                   = var.create_nat_gateway
   max_nats                              = 1
 }
 

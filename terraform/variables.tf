@@ -29,3 +29,10 @@ variable "enable_https" {
 
   default = true
 }
+
+variable "create_nat_gateway" {
+  type        = bool
+  description = "Whether to create a NAT Gateway (expensive). Gateway and interface endpoints, defined to support ECS Fargate, make the NAT Gateway unnecessary."
+
+  default = false
+}

@@ -22,3 +22,10 @@ output "hello_api_aws_ecr_image_tag" {
   sensitive   = false
   ephemeral   = false
 }
+
+output "hello_api_load_balander_domain_name" {
+  value       = aws_lb.hello_api.dns_name
+  description = "Domain name (on the public Internet) of the hello_api load balancer. Use this to connect."
+  sensitive   = false
+  ephemeral   = false
+}
