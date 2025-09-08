@@ -3,5 +3,6 @@
 # GPLv3, Copyright Paul Marcelin
 
 connexion==3.2.0
+kafka-python==2.2.15
 uvicorn==0.35.0
 gunicorn==23.0.0

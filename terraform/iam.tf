@@ -86,6 +86,44 @@ resource "aws_iam_role" "hello_api_ecs_task" {
   assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_assume_role.json
 }
 
+# https://docs.aws.amazon.com/msk/latest/developerguide/create-iam-role.html
+# https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-actions-as-permissions
+data "aws_iam_policy_document" "kafka_write" {
+  statement {
+    actions = [
+      "kafka-cluster:Connect",
+      "kafka-cluster:DescribeCluster"
+    ]
+    resources = [
+      aws_msk_serverless_cluster.hello_api.arn
+    ]
+  }
+  statement {
+    actions = [
+      "kafka-cluster:CreateTopic",
+      "kafka-cluster:DescribeTopic",
+      "kafka-cluster:WriteData"
+    ]
+    resources = [
+      replace(
+        replace(aws_msk_serverless_cluster.hello_api.arn, ":cluster/", ":topic/"),
+        aws_msk_serverless_cluster.hello_api.cluster_uuid,
+        "*"
+      )
+    ]
+  }
+}
+resource "aws_iam_policy" "kafka_write" {
+  name        = "kafka_write"
+  description = "MSK cluster: create, write to any topic"
+
+  policy = data.aws_iam_policy_document.kafka_write.json
+}
+resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
+  role       = aws_iam_role.hello_api_ecs_task.name
+  policy_arn = aws_iam_policy.kafka_write.arn
+}
+
 
 
 locals {
@@ -108,7 +146,6 @@ locals {
     ]
 
     "hello_api_ecs_task" = [
-      "AmazonMSKFullAccess"
     ]
   }
 
