@@ -120,6 +120,17 @@ module "hello_api_vpc_subnets" {
 
 
 
+resource "aws_security_group" "hello_api_vpc_all_egress" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "hello_api_load_balancer_from_source" {
   vpc_id = module.hello_api_vpc.vpc_id
 
@@ -162,30 +173,53 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_to_target
   referenced_security_group_id = aws_security_group.hello_api_load_balancer_target.id
 }
 
-resource "aws_security_group" "hello_api_vpc_all_egress" {
-  vpc_id = module.hello_api_vpc.vpc_id
+# https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html
 
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group" "hello_api_kafka_client" {
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
+resource "aws_security_group" "hello_api_kafka_server" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   ingress {
-    protocol  = "tcp"
-    from_port = 443
-    to_port   = 443
-
-    cidr_blocks = [module.hello_api_vpc.vpc_cidr_block]
+    security_groups = [aws_security_group.hello_api_kafka_client.id]
+    protocol        = "tcp"
+    from_port       = 9098
+    to_port         = 9098
   }
 }
 
+resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_client" {
+  security_group_id = aws_security_group.hello_api_kafka_client.id
 
+  ip_protocol                  = "tcp"
+  from_port                    = 9098
+  to_port                      = 9098
+  referenced_security_group_id = aws_security_group.hello_api_kafka_server.id
+}
+
+resource "aws_security_group" "hello_api_vpc_interface_endpoint_kafka" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  ingress {
+    cidr_blocks = [module.hello_api_vpc.vpc_cidr_block]
+    protocol    = "tcp"
+    from_port   = 9098
+    to_port     = 9098
+  }
+}
+
+resource "aws_security_group" "hello_api_vpc_interface_endpoint_tls" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  ingress {
+    cidr_blocks = [module.hello_api_vpc.vpc_cidr_block]
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+  }
+}
 
 resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
   vpc_id = module.hello_api_vpc.vpc_id
@@ -195,14 +229,47 @@ resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
   route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
 }
 
+# MSK Serverless provides a managed VPC endpoint. "kafka" hooks are for MSK
+# Provisioned. Creating a VPC interface endpoint for use with MSK Provisioned
+# requires an extra connection acceptance step, for which I was not able to
+# find documentation. The error was:
+# Error: creating EC2 VPC Endpoint (com.amazonaws.us-west-2.kafka): operation
+# error EC2: CreateVpcEndpoint, https responseerror StatusCode: 400, RequestID:
+# [...], api error InvalidParameter: Private DNS can only be enabled after the
+# endpoint connection is accepted by the owner of
+# com.amazonaws.us-west-2.kafka.
+# MSK Serverless:
+# https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access/
+# MSK Provisioned:
+# https://github.com/hashicorp/terraform-provider-aws/issues/7148
+
+locals {
+  vpc_interface_endpoint_service_to_security_group = {
+    "ecr.api" = aws_security_group.hello_api_vpc_interface_endpoint_tls.id
+    "ecr.dkr" = aws_security_group.hello_api_vpc_interface_endpoint_tls.id
+    "logs"    = aws_security_group.hello_api_vpc_interface_endpoint_tls.id
+    # "kafka"   = aws_security_group.hello_api_vpc_interface_endpoint_kafka.id
+  }
+  vpc_interface_endpoint_service_requires_acceptance = toset([
+    # "kafka"
+  ])
+}
+
 resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
-  for_each = toset(["ecr.api", "ecr.dkr", "logs"])
+  for_each = local.vpc_interface_endpoint_service_to_security_group
 
   vpc_id = module.hello_api_vpc.vpc_id
 
   service_name        = "com.amazonaws.${var.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"
-  private_dns_enabled = true
+  private_dns_enabled = contains(local.vpc_interface_endpoint_service_requires_acceptance, each.key) ? null : true
   subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
-  security_group_ids  = [aws_security_group.hello_api_vpc_interface_endpoint.id]
+  security_group_ids  = [each.value]
+}
+
+resource "aws_vpc_endpoint_private_dns" "hello_api_vpc_interface" {
+  for_each = local.vpc_interface_endpoint_service_requires_acceptance
+
+  vpc_endpoint_id     = aws_vpc_endpoint.hello_api_vpc_interface[each.key].id
+  private_dns_enabled = true
 }

@@ -4,4 +4,10 @@
 
 provider "aws" {
   region = var.aws_region_main
+
+  default_tags {
+    tags = {
+      project = "demonstration"
+    }
+  }
 }

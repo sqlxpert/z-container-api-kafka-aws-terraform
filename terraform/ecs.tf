@@ -2,6 +2,7 @@
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
+# For future use; see below
 resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
   name         = "hello_api_ecs_cluster"
   skip_destroy = true
