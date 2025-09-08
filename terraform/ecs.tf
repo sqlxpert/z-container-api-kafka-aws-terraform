@@ -136,7 +136,8 @@ resource "aws_ecs_service" "hello_api" {
     assign_public_ip = false
 
     security_groups = [
-      module.hello_api_vpc.vpc_default_security_group_id # TODO: define custom
+      aws_security_group.hello_api_vpc_all_egress.id,
+      aws_security_group.hello_api_load_balancer_target.id
     ]
   }
 }

@@ -117,3 +117,68 @@ module "hello_api_vpc_subnets" {
   nat_gateway_enabled                   = true
   max_nats                              = 1
 }
+
+
+
+resource "aws_security_group" "hello_api_load_balancer" {
+  vpc_id = module.hello_api_vpc.vpc_id
+}
+
+resource "aws_security_group" "hello_api_load_balancer_target" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  ingress {
+    security_groups = [aws_security_group.hello_api_load_balancer.id]
+
+    protocol  = "tcp"
+    from_port = 8000
+    to_port   = 8000
+  }
+}
+
+resource "aws_security_group" "hello_api_vpc_all_egress" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  ingress {
+    protocol  = "tcp"
+    from_port = 443
+    to_port   = 443
+
+    cidr_blocks = [module.hello_api_vpc.vpc_cidr_block]
+  }
+}
+
+
+
+resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  service_name      = "com.amazonaws.${var.aws_region_main}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
+}
+
+resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
+  for_each = toset(["ecr.api", "ecr.dkr", "logs"])
+
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  service_name        = "com.amazonaws.${var.aws_region_main}.${each.key}"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
+  security_group_ids = [
+    aws_security_group.hello_api_vpc_interface_endpoint.id
+  ]
+}
