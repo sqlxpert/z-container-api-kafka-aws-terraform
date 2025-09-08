@@ -25,7 +25,7 @@ variable "hello_api_aws_ecs_service_desired_count_tasks" {
 
 variable "enable_https" {
   type        = bool
-  description = "Whether to generate a self-signed TLS certificate (subject to Web browser warnings), enable HTTPS, and redirect HTTP to HTTPS. In case of problems, set to false for ordinary HTTP. Changing this might require a second `terraform apply`, because there is no lifecycle.destroy_before_create option to regulate replacement of the HTTP listener. Your Web browser might force continued use of HTTPS."
+  description = "Whether to generate a self-signed TLS certificate (subject to Web browser warnings), enable HTTPS, and redirect HTTP to HTTPS. In case of problems, set to false for ordinary HTTP. Changing this might require repeating `terraform apply`, because there is no destroy-before-create feature to regulate replacing a listener on the same port. Your Web browser might force continued use of HTTPS."
 
   default = true
 }

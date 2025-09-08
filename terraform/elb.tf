@@ -45,6 +45,16 @@ resource "aws_lb_target_group" "hello_api" {
   }
 }
 
+# As of 2025-09, Terraform has no create-after-destroy-like feature that would
+# allow a forward listener on Port 80 to be destroyed before a redirect
+# listener is created on the same port. Just apply twice! The error was:
+# Error: creating ELBv2 Listener ([arn]): operation error Elastic Load
+# Balancing v2: CreateListener, https response error StatusCode: 400,
+# RequestID: [...], DuplicateListener: A listener already exists on this port
+# for this load balancer '[arn]'
+# Feature request punted to the provider:
+# https://github.com/hashicorp/terraform/issues/26407
+
 resource "aws_lb_listener" "hello_api_http" {
   count = var.enable_https ? 0 : 1
 

@@ -6,6 +6,22 @@ data "aws_caller_identity" "current" {}
 
 
 
+# To reduce free labor on this demonstration project, I rely on AWS-managed IAM
+# policies, which are overly permissive. For examples of my trademark custom
+# least-privilege policies, see my pre-existing open-source projects.
+#
+# Least-privilege deployment role:
+# https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267
+#
+# Least-privilege Lambda function roles:
+# https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L484-L741
+
+
+
+# Provided for reference, in case you'd like to create an EC2 instance for
+# container image maintenance. (Use EC2's instance stop/hibernate feature to
+# control cost.) For a container task role, write a role trust policy
+# appropriate for the container orchestration service of your choice.
 data "aws_iam_policy_document" "hello_api_maintain_assume_role" {
   statement {
     principals {

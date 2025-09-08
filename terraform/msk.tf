@@ -1,0 +1,22 @@
+# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# GPLv3, Copyright Paul Marcelin
+
+resource "aws_msk_serverless_cluster" "hello_api" {
+  cluster_name = "hello-api"
+
+  vpc_config {
+    subnet_ids = module.hello_api_vpc_subnets.public_subnet_ids
+    security_group_ids = [
+      aws_security_group.hello_api_kafka_server.id
+    ]
+  }
+
+  client_authentication {
+    sasl {
+      iam {
+        enabled = true
+      }
+    }
+  }
+}
