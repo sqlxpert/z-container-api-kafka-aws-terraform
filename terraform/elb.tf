@@ -45,11 +45,73 @@ resource "aws_lb_target_group" "hello_api" {
   }
 }
 
-resource "aws_lb_listener" "hello_api_http_test" {
+resource "aws_lb_listener" "hello_api_http" {
+  count = var.enable_https ? 0 : 1
+
   load_balancer_arn = aws_lb.hello_api.arn
 
   port     = "80"
   protocol = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.hello_api.arn
+  }
+}
+
+module "hello_api_tls_certificate" {
+  source  = "cloudposse/ssm-tls-self-signed-cert/aws"
+  version = "1.3.0"
+
+  enabled = var.enable_https
+
+  certificate_backends = ["ACM"]
+  certificate_chain = {
+    cert_pem        = ""
+    private_key_pem = ""
+  }
+
+  subject = {
+    common_name         = "hello-api.example.com"
+    organization        = "None"
+    organizational_unit = "None"
+  }
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth"
+  ]
+}
+
+resource "aws_lb_listener" "hello_api_http_to_https" {
+  count = var.enable_https ? 1 : 0
+
+  load_balancer_arn = aws_lb.hello_api.arn
+
+  port     = "80"
+  protocol = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "hello_api_https" {
+  count = var.enable_https ? 1 : 0
+
+  load_balancer_arn = aws_lb.hello_api.arn
+
+  port            = "443"
+  protocol        = "HTTPS"
+  ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+  certificate_arn = module.hello_api_tls_certificate.certificate_arn
 
   default_action {
     type             = "forward"
