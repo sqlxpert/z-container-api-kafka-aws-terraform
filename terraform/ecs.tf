@@ -140,4 +140,10 @@ resource "aws_ecs_service" "hello_api" {
       aws_security_group.hello_api_load_balancer_target.id
     ]
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.hello_api.arn
+    container_name   = "hello_api"
+    container_port   = 8000
+  }
 }
