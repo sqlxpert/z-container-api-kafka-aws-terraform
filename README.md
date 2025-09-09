@@ -5,14 +5,12 @@ Hello!
 This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
 consumer setup for AWS, provisioned with Terraform. I wrote it in
 September,&nbsp;2025, in response to a take-home technical exercise for a
-DevOps position with a medium-sized East Coast USA startup (not named, to
-protect the integrity of their exercise). It's complete except for writing to
-Kafka (new for me, and a work in progress) and reading from it (I've
-demonstrated reading streams of events in lots of prior work).
+DevOps position with a medium-sized East Coast USA startup. It's complete
+except for writing to Kafka (new for me, and a work in progress) and reading
+from it (I've demonstrated reading streams of events in prior work).
 
 Have fun experimenting with it, see if you can re-use parts of it in your own
-projects (subject to the license), and feel free to send comments and
-questions (my e-mail address is at the end of this ReadMe). Thank you.
+projects, and feel free to send comments and questions. Thank you.
 
 Jump to:
 [Commentary](#commentary)
@@ -25,15 +23,15 @@ Jump to:
     **Switch to the `us-west-2` region**.
 
     > AWS service and feature availability varies by region, and changes over
-    time. I tested in `us-west-2`&nbsp;. At your own risk, you can change the
-    `aws_region_main` Terraform variable, perhaps in a `terraform.tfvars`
-    file).
+    time. I tested in `us-west-2`&nbsp;. You can change the `aws_region_main`
+    Terraform variable, perhaps in a local `terraform.tfvars` file.
 
  2. Create an EC2 instance. I recommend:
     - `arm64`
     - `t4g.micro`
     - Amazon Linux 2023
-    - A 30&nbsp;GiB EBS volume, with default encryption (for hiberation support)
+    - A 30&nbsp;GiB EBS volume, with default encryption (for hibernation
+      support)
     - No key pair; connect with
       [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html)
     - A custom security group with no ingress rules (yay for Session Manager!)
@@ -44,11 +42,11 @@ Jump to:
  3. During the instance creation workflow (Advanced details &rarr; IAM instance
     profile &rarr; Create new IAM profile) or afterward, give your EC2 instance
     a custom role. Within
-    [terraform/iam.tf](/terraform/iam.tf?raw=true)]
+    [terraform/iam.tf](/terraform/iam.tf?raw=true)
     in this repository, search for `"hello_api_maintain" =` to view a list of
     _AWS-managed_ policies covering the services and features used. Attach
-    those policies to the instance role. This approach is not least-privilege,
-    but it's fine for a demonstration and a _little_ better than `*:*`!
+    those policies to the instance role. It's not my trademark least-privilege,
+    but it will do for a demonstration and it's better than `*:*`!
 
  4. Update packages (there shouldn't be any updates if you chose the latest
     Amazon Linux 2023 image), install Terraform, and install packages needed
@@ -67,7 +65,10 @@ Jump to:
     ```
 
     You can make fun of me, but I use long option names wherever possible, so
-    that other people don't have to look up unfamiliar option letters!
+    that other people don't have to look up unfamiliar single letters &mdash;
+    assuming they _can_ find them. In
+    [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/),
+    for example, only 2 of 41 occurrences of `-t` are relevant.
 
  5. Uninstall the AWS CLI and replace it with the latest version.
 
@@ -244,9 +245,9 @@ labor, I:
   [event consumer code, resource permissions, and event source mapping](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L2470-L2538)
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-  Implementing the same event-driven Lambda function pattern with a new event
-  source would not add much, as much as I do look forward to learning more
-  about Kafka and MSK in the future.
+  Re-implementing the same pattern with a new event source would not say much.
+  The intelligence lies in AWS's glue between MSK (or a different service) and
+  Lambda; a simple consumer sees only batches of JSON-formatted events.
 
 - **Omitted structured JSON logging for API access.** Unfortunately, it turns
   out that the OpenAPI Python module that I chose early-on uses `uvicorn`
@@ -337,11 +338,10 @@ most startups.)
 |API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
 |Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
 |API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
-|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the serverless variant of MSK places the focus on usage rather than on cluster specification and operation. Still, everything seems to take more effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous.|
+|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ places the focus on usage rather than on cluster specification and operation. Still, everything seems to take more effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
-|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>|
-
+|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the difficulty of bootstrapping Terraform. In the short time frame of this project, I had to code my own VPC gateway and interace endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-modle is incompatible with the current Terraform AWS provider. I also documented a case where I couldn't use a basic AWS IPAM feature because it's not yet supported by the provider. All of this adds up to wasted effort that doesn't justify whatever benefits people ascribe to Terraform.|
 ## Licenses
 
 |Scope|Link|Included Copy|
