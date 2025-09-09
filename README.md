@@ -287,7 +287,7 @@ labor, I:
   write my trademark custom least-privilege policies. My long-standing
   open-source projects model least-privilege IAM policies. See, for example,
   the
-  [CloudFormation deployment role](https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267)
+  [deployment role](https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267)
   and the
   [Lambda function roles](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L484-L741)
   in
@@ -311,8 +311,8 @@ labor, I:
   [`Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L290-L399)
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-  I have also modeled the more AWS-idiomatic and scalable approach of using
-  Systems Manager Parameter Store and path hierarchies. See
+  I have also modeled the more AWS-idiomatic and composable approach of using
+  Systems Manager Parameter Store and path hierarchies for outputs. See
   [`ClientSecGrpIdParam`](https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/1eb9028/10-minute-aws-client-vpn.yaml#L348-L362)
   in
   [github.com/sqlxpert/10-minute-aws-client-vpn](https://github.com/sqlxpert/10-minute-aws-client-vpn#10-minute-aws-client-vpn)&nbsp;.
