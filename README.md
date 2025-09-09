@@ -151,7 +151,7 @@ Jump to:
 
 10. Using your Web browser, or `curl`&nbsp;, visit the following:
 
-    - `http://DOMAIN/healtcheck`
+    - `http://DOMAIN/healthcheck`
 
     - `http://DOMAIN/hello`
 
