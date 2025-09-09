@@ -143,13 +143,14 @@ Jump to:
 
 10. Using your Web browser, or `curl`&nbsp;, visit the following:
 
-    - http://DOMAIN/healtcheck
+    - `http://DOMAIN/healtcheck`
 
-    - http://DOMAIN/hello
+    - `http://DOMAIN/hello`
 
-    - http://DOMAIN/current_time?name=test
+    - `http://DOMAIN/current_time?name=test`
 
-    where DOMAIN is the output value that you noted at the end of Step&nbsp;7.
+    where _DOMAIN_ is the output value that you noted at the end of
+    Step&nbsp;7.
 
     Your Web browser should redirect you from `http:` to `https:` and (let's
     hope!) warn you about the untrusted, self-signed TLS certificate used for
