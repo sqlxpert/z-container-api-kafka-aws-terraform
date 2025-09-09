@@ -1,14 +1,24 @@
 # Containerized API, Kafka Cluster, Lambda Consumer
 
-_Containerized REST API &rarr; managed Kafka cluster &rarr; Lambda consumer,
-on AWS, provisioned via Terraform (demonstration only)_
+Hello!
+
+This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
+consumer setup for AWS, provisioned with Terraform. I wrote it in
+September,&nbsp;2025, in response to a take-home technical exercise for a
+DevOps position with a medium-sized East Coast USA. It's complete except for
+writing to Kafka (new for me, and a work in progress) and reading from it
+(I've demonstrated reading streams of events in lots of prior work).
+
+Have fun experimenting with it, see if you can re-use parts of it in your own
+projects (subject to the license), and feel free to send comments and
+questions (my e-mail address is at the end of this ReadMe). Thank you.
 
 Jump to:
-[Get Started](#get-started)
-&bull;
 [Commentary](#commentary)
+&bull;
+[Licenses](#licenses)
 
-## Get Started
+## Getting Started
 
  1. Authenticate to a non-production AWS account, with a privileged role.
     **Switch to the `us-west-2` region**.
@@ -188,13 +198,10 @@ Jump to:
 
 ## Commentary
 
-I developed this in September,&nbsp;2025, in response to a take-home technical
-exercise for a DevOps position with a medium-sized East Coast USA.
-
 ### Statement on AI, LLMs and Code Generation
 
 This is my own work, produced _without_ the use of artificial intelligence /
-large language model code generation.
+large language model code generation. Code from other sources is acknowledged.
 
 ### Limitations
 
@@ -328,7 +335,7 @@ most startups.)
 |API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
 |Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
 |API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
-|Data streaming|Apache&nbsp;Kafka, via MSK|Apache&nbsp;Kafka, via MSK _Serverless_|The serverless variant of MSK places the focus on usage rather than on cluster specification and operation.|
+|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the serverless variant of MSK places the focus on usage rather than on cluster specification and operation. Still, everything seems to take more effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
 |Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>|
