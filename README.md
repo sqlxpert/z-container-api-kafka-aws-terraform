@@ -15,6 +15,8 @@ projects, and feel free to send comments and questions. Thank you.
 Jump to:
 [Commentary](#commentary)
 &bull;
+[Licenses](#recommendations)
+&bull;
 [Licenses](#licenses)
 
 ## Getting Started
@@ -186,7 +188,8 @@ Jump to:
 
     Expect a slow deletion process for the VPC and for IPAM. You might prefer
     to interrupt Terraform, delete the `hello_api` VPC and the IPAM pool
-    cascade manually in the AWS Console, then repeat `terraform apply`&nbsp;.
+    cascade manually in the AWS Console, then repeat `terraform apply
+    -destroy`&nbsp;.
 
     Expect an error message about retiring KMS encryption key grants (harmless,
     in this case).
@@ -329,7 +332,7 @@ most startups.)
 |:---|:---|:---|:---|
 |API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
 |Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
-|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
+|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway makes it easy to implement rate-limiting/throttling. The service integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
 |Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ places the focus on usage rather than on cluster specification and operation. Still, everything seems to take more effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
