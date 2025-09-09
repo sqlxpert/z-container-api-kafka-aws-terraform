@@ -47,8 +47,8 @@ Jump to:
     [terraform/iam.tf](/terraform/iam.tf?raw=true)
     in this repository, search for `"hello_api_maintain" =` to view a list of
     _AWS-managed_ policies covering the services and features used. Attach
-    those policies to the instance role. It's not my trademark least-privilege,
-    but it will do for a demonstration and it's better than `*:*`!
+    those policies to the instance role. It's not my trademark least-privilege
+    work, but it'll do for a demonstration and it's better than `*:*`!
 
  4. Update packages (there shouldn't be any updates if you chose the latest
     Amazon Linux 2023 image), install Terraform, and install packages needed
@@ -66,11 +66,17 @@ Jump to:
     sudo dnf install python3.12
     ```
 
-    You can make fun of me, but I use long option names wherever possible, so
-    that other people don't have to look up unfamiliar single letters &mdash;
-    assuming they _can_ find them. In
-    [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/),
-    for example, only 2 of 41 occurrences of `-t` are relevant.
+    > You can make fun of me, but I write the long option name wherever
+    possible, so that other people don't have to look up an unfamiliar
+    single-letter option &mdash; assuming they _can_ find it. Here's an
+    example that shows why I go to the trouble even at the expense of being
+    laughed at by macho Linux users. (I started using UNICOS in 1991, so it's
+    not about a lack of experience.) Perform a literal text search for `-t` in
+    [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
+    using Command-F, Control-F, `/`&nbsp;, `grep`&nbsp;, etc. Only 2 of 41
+    occurrences of `-t` are relevant. _Full-text_ search engines, where
+    available, can't make sense of a one-letter search term and tend to ignore
+    two-letter terms. Short search terms are stop-words in almost all cases.
 
  5. Uninstall the AWS CLI and replace it with the latest version.
 
@@ -110,7 +116,7 @@ Jump to:
     terraform apply
     ```
 
-    **Copy the `hello_api_load_balander_domain_name` output value** to a note.
+    **Copy the `hello_api_load_balancer_domain_name` output value** to a note.
     This is the domain name of for your new API! You can't connect just yet, of
     course.
 
