@@ -26,7 +26,8 @@ Jump to:
 
     > AWS service and feature availability varies by region, and changes over
     time. I tested in `us-west-2`&nbsp;. At your own risk, you can change the
-    `aws_region_main` Terraform variable, perhaps in `terraform.tfvars` file).
+    `aws_region_main` Terraform variable, perhaps in a `terraform.tfvars`
+    file).
 
  2. Create an EC2 instance. I recommend:
     - `arm64`
