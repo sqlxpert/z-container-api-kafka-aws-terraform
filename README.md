@@ -245,12 +245,11 @@ labor, I:
   Lambda; a simple consumer sees only batches of JSON-formatted events.
 
 - **Omitted structured JSON logging for API access.** Unfortunately, it turns
-  out that the OpenAPI Python module that I chose early-on uses `uvicorn`
-  workers, which
+  out that the OpenAPI Python module I chose early-on uses `uvicorn` workers,
+  which
   [ignore custom log formats](https://stackoverflow.com/questions/62894952/fastapi-gunicorn-uvicorn-access-log-format-customization)
   passed in through `gunicorn`, and only
-  [support a few fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114)
-).
+  [support a few fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114).
   My other work demonstrates structured JSON logging (link above), so I did not
   spend time writing code to override `uvicorn` (for log contents) or Python's
   logging system (for JSON formatting). In a slim container (part of the
