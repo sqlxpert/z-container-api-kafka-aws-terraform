@@ -256,10 +256,10 @@ labor, I:
   [support a few fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114)
 ).
   My other work demonstrates structured JSON logging (link above), so I did not
-  spend time writing code to override `uvicorn` (for log contents) or Python'
-  system (for JSON formatting). In a slim container (part of the exercise!), I
-  did not want the extra dependency of a third-party JSON logging module,
-  either.
+  spend time writing code to override `uvicorn` (for log contents) or Python's
+  logging system (for JSON formatting). In a slim container (part of the
+  exercise!), I did not want the extra dependency of a third-party JSON logging
+  module, either.
 
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
