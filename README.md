@@ -96,9 +96,10 @@ Jump to:
     git clone 'https://github.com/sqlxpert/z-container-api-kafka-aws-terraform.git'
     ```
 
- 7. Initialize Terraform and create the AWS infrastructure. `terraform apply`
-    outputs the plan and gives you a chance to approve, before anything is
-    done. If you don't like the plan, don't type `yes`&nbsp;!
+ 7. Initialize Terraform and create the AWS infrastructure. There's no need for
+    a separate `terraform plan` step. `terraform apply` outputs the plan and
+    gives you a chance to approve before anything is done. If you don't like
+    the plan, don't type `yes`&nbsp;!
 
     > CloudPosse's otherwise excellent
     [dynamic-subnets](https://registry.terraform.io/modules/cloudposse/dynamic-subnets/aws/latest)
@@ -174,7 +175,7 @@ Jump to:
 
     If your Web browser configuration does not allow accessing Web sites with
     untrusted certificates, change the `enable_https` Terraform variable,
-    `terraform apply` twice (don't ask!) and `http:` links will work without
+    `terraform apply` twice (don't ask!), and `http:` links will work without
     redirection. (Once you have used `https:` with a particular site, your
     browser might no longer allow `http:` for that site. Use a separate Web
     browser if necessary.)
