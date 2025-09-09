@@ -15,18 +15,18 @@ projects, and feel free to send comments and questions. Thank you.
 Jump to:
 [Commentary](#commentary)
 &bull;
-[Licenses](#recommendations)
+[Recommendations](#recommendations)
 &bull;
 [Licenses](#licenses)
 
 ## Getting Started
 
- 1. Authenticate to a non-production AWS account, with a privileged role.
-    **Switch to the `us-west-2` region**.
+ 1. Authenticate to the AWS Console. Use a non-production AWS account and a
+    privileged role. **Switch to the `us-west-2` region**.
 
-    > AWS service and feature availability varies by region, and changes over
-    time. I tested in `us-west-2`&nbsp;. You can change the `aws_region_main`
-    Terraform variable, perhaps in a local `terraform.tfvars` file.
+    > Service and feature availability varies by region. I tested in
+    `us-west-2`&nbsp;. You can change the `aws_region_main` variable, perhaps
+    in a local `terraform.tfvars` file.
 
  2. Create an EC2 instance. I recommend:
     - `arm64`
@@ -335,7 +335,12 @@ most startups.)
 |Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ variant places the focus on usage rather than on cluster specification and operation. Still, everything seems to take more effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
-|Infrastructure as code|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the difficulty of bootstrapping Terraform. In the short time frame of this project, I had to code my own VPC gateway and interface endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-modle is incompatible with the current Terraform AWS provider. I also documented a case where I couldn't use a basic AWS IPAM feature because it's not yet supported by the provider. All of this adds up to wasted effort that doesn't justify whatever benefits people ascribe to Terraform.|
+|Infrastructure as code (for _AWS_ resources)|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the relative difficulty of bootstrapping Terraform. In the short time frame of this project, I had to code my own VPC gateway and interface endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-module is incompatible with the current Terraform AWS provider, and I couldn't downgrade _that_ and break everything else. I also documented a case where I couldn't use a basic AWS IPAM feature because it's not yet supported by the Terraform AWS provider. On a daily basis, and at scale, these problems amount to wasted effort that doesn't justify whatever benefits people ascribed to Terraform. (My advice is specifically for managing _AWS_ resources. Use whatever IaC tool you like for non-AWS stuff, prioritizing the many, close relationships between components created with the AWS API, over the few, weak dependencies between AWS- and non-AWS components.)|
+
+In short, added complexity in any piece of software, any framework, any tool
+had better come with a unique, tangible, and substantial benefit. Otherwise, a
+resource-constrained startup is better off choosing the simpler alternative.
+
 ## Licenses
 
 |Scope|Link|Included Copy|
