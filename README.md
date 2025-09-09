@@ -181,20 +181,11 @@ Jump to:
 12. Delete this infrastructure as soon as you are done experimenting. I've
     chosen low-cost options but they are not free.
 
-    A quick way to delete the infrastructure is to delete all `.tf` files from
-    `~/z-container-api-kafka-aws-terraform/terraform` _except_
+    `terraform apply -destroy` is a quick solution.
 
-    ```plaintext
-    terraform.tf
-    providers.tf
-    variables.tf
-    ```
-
-    and then run `terraform apply`.
-
-    Expect a slow deletion process for the VPC. You might prefer to interrupt
-    Terraform, delete the `hello_api` VPC manually in the AWS Console, and
-    repeat `terraform apply`
+    Expect a slow deletion process for the VPC and for IPAM. You might prefer
+    to interrupt Terraform, delete the `hello_api` VPC and the IPAM pool
+    cascade manually in the AWS Console, then repeat `terraform apply`&nbsp;.
 
     Expect an error message about retiring KMS encryption key grants (harmless,
     in this case).
@@ -231,7 +222,7 @@ labor, I:
   cluster, including appropriate networking. Because I am new to Kafka, MSK,
   and MSK Serverless, I ran out of time to debug and test Kafka authentication
   in Python. I show work-in-progress in a separate branch,
-  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/main..msk-in-progress?expand=1).
+  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/b278fdd..msk-in-progress).
   I do look forward to learning more about Kafka and MSK, and will return to
   this when time permits.
 
