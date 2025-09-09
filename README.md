@@ -8,19 +8,188 @@ Jump to:
 &bull;
 [Commentary](#commentary)
 
-## Diagram
-
-Intentionally omitted. See [Limitations](#limitations).
-
 ## Get Started
 
-Forthcoming...
+ 1. Authenticate to a non-production AWS account, with a privileged role.
+    **Switch to the `us-west-2` region**.
+
+    > AWS service and feature availability varies by region, and changes over
+    time. I tested in `us-west-2`&nbsp;. At your own risk, you can change the
+    `aws_region_main` Terraform variable, perhaps in `terraform.tfvars` file).
+
+ 2. Create an EC2 instance. I recommend:
+    - `arm64`
+    - `t4g.micro`
+    - Amazon Linux 2023
+    - A 30&nbsp;GiB EBS volume, with default encryption (for hiberation support)
+    - No key pair; connect with
+      [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html)
+    - A custom security group with no ingress rules (yay for Session Manager!)
+    - A `sched-stop` = `d=_ H:M=07:00` tag for automatic nightly shutdown (this
+      example is for midnight Pacific Daylight Time) with
+      [sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)
+
+ 3. During the instance creation workflow (Advanced details &rarr; IAM instance
+    profile &rarr; Create new IAM profile) or afterward, give your EC2 instance
+    a custom role. Within
+    [terraform/iam.tf](/terraform/iam.tf?raw=true)]
+    in this repository, search for `"hello_api_maintain" =` to view a list of
+    _AWS-managed_ policies covering the services and features used. Attach
+    those policies to the instance role. This approach is not least-privilege,
+    but it's fine for a demonstration and a _little_ better than `*:*`!
+
+ 4. Update packages (there shouldn't be any updates if you chose the latest
+    Amazon Linux 2023 image), install Terraform, and install packages needed
+    for building the Docker container.
+
+    ```shell
+    sudo dnf check-update
+    sudo dnf --releasever=latest update
+
+    sudo dnf install 'dnf-command(config-manager)'
+    sudo dnf config-manager --add-repo 'https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo'
+    sudo dnf install terraform-1.13.1-1
+
+    sudo dnf install docker
+    sudo dnf install python3.12
+    ```
+
+    You can make fun of me, but I use long option names wherever possible, so
+    that other people don't have to look up unfamiliar option letters!
+
+ 5. Uninstall the AWS CLI and replace it with the latest version.
+
+    ```shell
+    sudo dnf remove awscli
+    
+    cd /tmp
+    curl 'https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip' --output 'awscliv2.zip'
+    unzip awscliv2.zip
+    sudo ./aws/install --update
+    ```
+
+ 6. Clone this repository.
+
+    ```shell
+    cd ~
+    git clone 'https://github.com/sqlxpert/z-container-api-kafka-aws-terraform.git'
+    ```
+
+ 7. Initialize Terraform and create the AWS infrastructure. `terraform apply`
+    outputs the plan and gives you a chance to approve, before anything is
+    done. If you don't like the plan, don't type `yes`&nbsp;!
+
+    > CloudPosse's otherwise excellent
+    [dynamic-subnets](https://registry.terraform.io/modules/cloudposse/dynamic-subnets/aws/latest)
+    module isn't dynamic enough to be integrated with AWS IP Address Manager
+    (IPAM), which I use, so you have to allocate subnet IP addresses before
+    continuing.
+
+    ```shell
+    cd ~/z-container-api-kafka-aws-terraform/terraform
+    terraform init
+
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets'
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+
+    terraform apply
+    ```
+
+    **Copy the `hello_api_load_balander_domain_name` output value** to a note.
+    This is the domain name of for your new API! You can't connect just yet, of
+    course.
+
+ 8. Set environment variables needed for tagging and pushing the container
+    image, then build the container.
+
+    ```shell
+    cd ~/z-container-api-kafka-aws-terraform/terraform
+
+    AWS_ECR_REGISTRY_REGION=$(terraform output -raw 'hello_api_aws_ecr_registry_region')
+    AWS_ECR_REGISTRY_URI=$(terraform output -raw 'hello_api_aws_ecr_registry_uri')
+    AWS_ECR_REPOSITORY_URL=$(terraform output -raw 'hello_api_aws_ecr_repository_url')
+    HELLO_API_AWS_ECR_IMAGE_TAG=$(terraform output -raw 'hello_api_aws_ecr_image_tag')
+
+    cd ~/z-container-api-kafka-aws-terraform/python_docker
+
+    sudo docker build --platform=linux/arm64 --tag "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}" --progress=plain .
+
+    aws ecr get-login-password --region "${AWS_ECR_REGISTRY_REGION}" | sudo docker login --username AWS --password-stdin "${AWS_ECR_REGISTRY_URI}"
+
+    sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
+    ```
+
+ 9. In the Amazon Elastic Container Service section of the AWS Console, check
+    the `hello_api` cluster. Eventually, you should see that 3 tasks are
+    running.
+
+    It will take a few minutes for ECS to notice, and then deploy, the
+    container image. Relax, and let it happen. If you are impatient, or if
+    there is problem, you can navigate to the `hello_api` service, open the
+    orange "Update service" pop-up menu, and select "Force new deployment".
+
+10. Using your Web browser, or `curl`&nbsp;, visit the following:
+
+    - http://DOMAIN/healtcheck
+
+    - http://DOMAIN/hello
+
+    - http://DOMAIN/current_time?name=test
+
+    where DOMAIN is the output value that you noted at the end of Step&nbsp;7.
+
+    Your Web browser should redirect you from `http:` to `https:` and (let's
+    hope!) warn you about the untrusted, self-signed TLS certificate used for
+    this demonstration. Proceed to view the responses from your new API...
+
+    The health check should return nothing. `/hello` should return a fixed
+    greeting, in a JSON object. `/current_time?name=SHORTNAME` should return a
+    reflected greeting and a timestamp, again in a JSON object.
+
+    The API will return error messages for unexpected inputs. To prevent
+    command injection attacks, I have limited the length and character set for
+    _SHORTNAME_.
+
+    If your Web browser configuration does not allow accessing Web sites with
+    untrusted certificates, change the `enable_https` Terraform variable,
+    `terraform apply` twice (don't ask!) and `http:` links will work without
+    redirection. (Once you have used `https:` with a particular site, your
+    browser might no longer allow `http:` for that site. Use a separate Web
+    browser if necessary.)
+
+11. For more excitement, access the
+    [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs)
+    CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
+    reserved for future use.)
+
+    Periodic internal health checks, plus your occasional Web requests, should
+    appear.
+
+12. Delete this infrastructure as soon as you are done experimenting. I've
+    chosen low-cost options but they are not free.
+
+    A quick way to delete the infrastructure is to delete all `.tf` files from
+    `~/z-container-api-kafka-aws-terraform/terraform` _except_
+
+    ```plaintext
+    terraform.tf
+    providers.tf
+    variables.tf
+    ```
+
+    and then run `terraform apply`.
+
+    Expect a slow deletion process for the VPC. You might prefer to interrupt
+    Terraform, delete the `hello_api` VPC manually in the AWS Console, and
+    repeat `terraform apply`
+
+    Expect an error message about retiring KMS encryption key grants (harmless,
+    in this case).
 
 ## Commentary
 
 I developed this in September,&nbsp;2025, in response to a take-home technical
-exercise for a Senior DevOps Engineer position with a medium-sized US East
-Coast startup.
+exercise for a DevOps position with a medium-sized East Coast USA.
 
 ### Statement on AI, LLMs and Code Generation
 
@@ -34,6 +203,54 @@ it is not intended for production use.
 
 Producing a working solution required significant free labor. To limit free
 labor, I:
+
+- **Omitted a local environment.** Local packaging and testing of Docker
+  containers meant to be deployed in the cloud, and local execution of
+  `terraform apply` for cloud resources, introduce variability and risk without
+  much benefit. I created an EC2 instance in the AWS Console and used its EBS
+  volume to store Terraform state during development.
+  [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
+  would also work well for manual container generation tasks (but not for
+  storing local Terraform state).
+  [Shareable Lambda function test events](https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events)
+  offer a great way to bundle test events in IaC templates. Users can trigger
+  realistic tests in a development AWS account, using either the AWS Console or
+  the AWS&nbsp;CLI.
+
+- **Omitted writing to Kafka.** The solution creates an MSK Serverless
+  cluster, including appropriate networking. Because I am new to Kafka, MSK,
+  and MSK Serverless, I ran out of time to debug and test Kafka authentication
+  in Python. I show work-in-progress in a separate branch,
+  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/main..msk-in-progress?expand=1).
+  I do look forward to learning more about Kafka and MSK, and will return to
+  this when time permits.
+
+- **Omitted the Kafka consumer Lambda function.** My prior open-source work
+  demonstrates event-driven Lambda functions, including event source mappings,
+  function scaling, batch handling, and modern, structured JSON logging. For
+  an example with SQS as the event source, see
+  [function setup](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L1728-L1767),
+  [structured logging code](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L1832-L1847),
+  and
+  [event consumer code, resource permissions, and event source mapping](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L2470-L2538)
+  in
+  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
+  Implementing the same event-driven Lambda function pattern with a new event
+  source would not add much, as much as I do look forward to learning more
+  about Kafka and MSK in the future.
+
+- **Omitted structured JSON logging for API access.** Unfortunately, it turns
+  out that the OpenAPI Python module that I chose early-on uses `uvicorn`
+  workers, which
+  [ignore custom log formats](https://stackoverflow.com/questions/62894952/fastapi-gunicorn-uvicorn-access-log-format-customization)
+  passed in through `gunicorn`, and only
+  [support a few fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114)
+).
+  My other work demonstrates structured JSON logging (link above), so I did not
+  spend time writing code to override `uvicorn` (for log contents) or Python'
+  system (for JSON formatting). In a slim container (part of the exercise!), I
+  did not want the extra dependency of a third-party JSON logging module,
+  either.
 
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory

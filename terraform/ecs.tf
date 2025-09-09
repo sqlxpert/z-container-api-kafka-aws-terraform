@@ -4,8 +4,7 @@
 
 # For future use; see below
 resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
-  name         = "hello_api_ecs_cluster"
-  skip_destroy = true
+  name = "hello_api_ecs_cluster"
 
   log_group_class   = "STANDARD"
   retention_in_days = 3
@@ -13,8 +12,7 @@ resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
 
 # Pre-create to be sure this is tracked
 resource "aws_cloudwatch_log_group" "hello_api_ecs_task" {
-  name         = "hello_api_ecs_task"
-  skip_destroy = true
+  name = "hello_api_ecs_task"
 
   log_group_class   = "STANDARD"
   retention_in_days = 3

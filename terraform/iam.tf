@@ -152,4 +152,11 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
 
   role       = split(local.iam_role_policy_attachments_delimiter, each.key)[0]
   policy_arn = data.aws_iam_policy.aws_managed[split(local.iam_role_policy_attachments_delimiter, each.key)[1]].arn
+
+  # Yuck! If only Terraform were a tiny bit smarter with dependencies...
+  depends_on = [
+    aws_iam_role.hello_api_maintain,
+    aws_iam_role.hello_api_ecs_task_execution,
+    aws_iam_role.hello_api_ecs_task
+  ]
 }

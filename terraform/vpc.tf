@@ -69,6 +69,10 @@ resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
   count = local.hello_api_vpc_private_subnet_count
 
+  depends_on = [
+    aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
+  ]
+
   lifecycle {
     ignore_changes = [
       cidr
@@ -79,6 +83,10 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
 }
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_public_subnets" {
   count = local.hello_api_vpc_private_subnet_count
+
+  depends_on = [
+    aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
+  ]
 
   lifecycle {
     ignore_changes = [
