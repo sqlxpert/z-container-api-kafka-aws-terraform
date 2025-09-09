@@ -251,17 +251,18 @@ labor, I:
   The intelligence lies in AWS's glue between MSK (or a different service) and
   Lambda; a simple consumer sees only batches of JSON-formatted events.
 
-- **Omitted structured JSON logging for API access.** Unfortunately, it turns
-  out that the OpenAPI Python module I chose early-on uses `uvicorn` workers,
-  which
-  [ignore custom log formats](https://stackoverflow.com/questions/62894952/fastapi-gunicorn-uvicorn-access-log-format-customization)
-  passed in through `gunicorn`, and only
-  [support a few fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114).
-  My other work demonstrates structured JSON logging (link above), so I did not
-  spend time writing code to override `uvicorn` (for log contents) or Python's
-  logging system (for JSON formatting). In a slim container (part of the
-  exercise!), I did not want the extra dependency of a third-party JSON logging
-  module, either.
+- **Omitted structured JSON logging for API access.** Unfortunately, the
+  OpenAPI Python module I'd chosen early-on turned out to use `uvicorn`
+  workers only. They
+  [ignore custom log formats passed in through `gunicorn`](https://github.com/benoitc/gunicorn/issues/2299#issuecomment-1870716061),
+  [require patching for a custom log format](https://stackoverflow.com/questions/62894952/fastapi-gunicorn-uvicorn-access-log-format-customization),
+  and
+  [support very few log fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114),
+  anyway. My other work demonstrates structured JSON logging (link above), so I
+  did not spend time writing code to override `uvicorn` (for log contents) or
+  Python's logging system (for JSON formatting). A slim container was part of
+  the exercise, so I did not want the extra dependency of a third-party JSON
+  logging module, either.
 
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
