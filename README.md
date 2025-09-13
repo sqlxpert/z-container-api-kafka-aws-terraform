@@ -76,7 +76,7 @@ Jump to:
     using Command-F, Control-F, `/`&nbsp;, `grep`&nbsp;, etc. Only 2 of 41
     occurrences of `-t` are relevant. _Full-text_ search engines, where
     available, can't make sense of a one-letter search term and tend to ignore
-    two-letter terms. Short search terms are stop-words in almost all cases.
+    two-character terms. Short search terms are stop-words in almost all cases.
 
  5. Uninstall the AWS CLI and replace it with the latest version.
 
