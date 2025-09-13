@@ -25,6 +25,9 @@ HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP = os_environ.get(
     "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP", ""
 )
 ENABLE_KAFKA = bool(HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP)
+KAFKA_CLIENT_ID = "hello_api"
+# Desired: Containers.DockerId (low priority; requires adding requests module)
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4-response.html
 
 
 class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-methods
@@ -32,7 +35,7 @@ class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-
     """
 
     if ENABLE_KAFKA:
-        def token(self):  # pylint:disable=no-self-use
+        def token(self):
             """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
 
             TODO: Check whether configuration is suitable for production, with
@@ -59,7 +62,7 @@ def kafka_producer_get():
             security_protocol="SASL_SSL",
             sasl_mechanism="OAUTHBEARER",
             sasl_oauth_token_provider=kafka_token_provider,
-            client_id="my.kafka.client.unique.id",
+            client_id=KAFKA_CLIENT_ID,
             allow_auto_create_topics=True,
         )
 
