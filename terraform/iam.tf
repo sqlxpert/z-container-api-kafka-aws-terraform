@@ -99,7 +99,7 @@ data "aws_iam_policy_document" "kafka_write" {
       "kafka-cluster:DescribeCluster"
     ]
     resources = [
-      aws_msk_serverless_cluster.hello_api.arn
+      try(one(aws_msk_serverless_cluster.hello_api).arn, "*")
     ]
   }
   statement {
