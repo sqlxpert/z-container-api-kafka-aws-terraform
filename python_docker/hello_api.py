@@ -25,6 +25,9 @@ HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP = os_environ.get(
     "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP", ""
 )
 ENABLE_KAFKA = bool(HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP)
+HELLO_API_AWS_MSK_CLUSTER_TOPIC = os_environ.get(
+    "HELLO_API_AWS_MSK_CLUSTER_TOPIC", "events"
+)
 KAFKA_CLIENT_ID = "hello_api"
 # Desired: Containers.DockerId (low priority; requires adding requests module)
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4-response.html
