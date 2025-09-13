@@ -315,7 +315,9 @@ labor, I:
   [`Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L290-L399)
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-  I have also modeled the more AWS-idiomatic and composable approach of using
+  I have also modeled the more AWS-idiomatic and
+  [composable](https://developer.hashicorp.com/terraform/language/state/remote-state-data#alternative-ways-to-share-data-between-configurations)
+  approach of using
   Systems Manager Parameter Store and path hierarchies for outputs. See
   [`ClientSecGrpIdParam`](https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/1eb9028/10-minute-aws-client-vpn.yaml#L348-L362)
   in
