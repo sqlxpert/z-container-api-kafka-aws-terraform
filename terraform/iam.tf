@@ -136,10 +136,9 @@ locals {
     ])
   ])
 
-  aws_managed_iam_policy_names = toset([
-    for iam_role_policy_attachment in local.iam_role_policy_attachments :
-    iam_role_policy_attachment.aws_managed_iam_policy_name
-  ])
+  aws_managed_iam_policy_names = toset(
+    local.iam_role_policy_attachments[*].aws_managed_iam_policy_name
+  )
 }
 
 data "aws_iam_policy" "aws_managed" {

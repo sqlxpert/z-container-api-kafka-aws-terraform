@@ -107,14 +107,8 @@ module "hello_api_vpc_subnets" {
   vpc_id = module.hello_api_vpc.vpc_id
   igw_id = [module.hello_api_vpc.igw_id]
   ipv4_cidrs = [{
-    private = [
-      for cidr_allocation in aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets :
-      cidr_allocation.cidr
-    ]
-    public = [
-      for cidr_allocation in aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets :
-      cidr_allocation.cidr
-    ]
+    private = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets[*].cidr
+    public  = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets[*].cidr
   }]
 
   max_subnet_count = local.hello_api_vpc_private_subnet_count
