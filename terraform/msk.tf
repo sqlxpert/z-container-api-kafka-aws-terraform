@@ -3,7 +3,9 @@
 # GPLv3, Copyright Paul Marcelin
 
 resource "aws_msk_serverless_cluster" "hello_api" {
-  cluster_name = "hello-api"
+  count = var.enable_kafka ? 1 : 0
+
+  cluster_name = "hello_api"
 
   vpc_config {
     subnet_ids = module.hello_api_vpc_subnets.public_subnet_ids

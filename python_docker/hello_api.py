@@ -13,31 +13,36 @@ from os import environ as os_environ
 from time import time as time_time
 from connexion import AsyncApp as connexion_AsyncApp
 from connexion import options as connexion_options
-from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
+from kafka.sasl.oauth import AbstractTokenProvider
 from kafka import KafkaProducer
+from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 
 
-AWS_REGION = os_environ.get("AWS_REGION", "us-west-2")
+AWS_REGION = os_environ.get(
+    "AWS_REGION", os_environ.get("AWS_DEFAULT_REGION", "us-west-2")
+)
 HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP = os_environ.get(
     "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP", ""
 )
+ENABLE_KAFKA = bool(HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP)
 
 
-class MSKTokenProvider():  # pylint:disable=too-few-public-methods
+class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-methods
     """Generate an OAUTHBEARER token to access AWS MSK using IAM authentication
     """
 
-    def token(self):  # pylint:disable=no-self-use
-        """Get an OAUTHBEARER token to access AWS MSK using IAM authentication
+    if ENABLE_KAFKA:
+        def token(self):  # pylint:disable=no-self-use
+            """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
 
-        TODO: Check whether configuration is suitable for production, with
-        timeouts, retry logic, etc.
-        """
-        (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
-        return token
+            TODO: Check whether configuration is suitable for production, with
+            timeouts, retry logic, etc.
+            """
+            (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
+            return token
 
 
-tp = MSKTokenProvider()
+kafka_token_provider = MSKTokenProvider()
 kafka_producer = None  # pylint: disable=invalid-name
 
 
@@ -53,8 +58,9 @@ def kafka_producer_get():
             bootstrap_servers=HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP,
             security_protocol="SASL_SSL",
             sasl_mechanism="OAUTHBEARER",
-            sasl_oauth_token_provider=tp,
+            sasl_oauth_token_provider=kafka_token_provider,
             client_id="my.kafka.client.unique.id",
+            allow_auto_create_topics=True,
         )
 
     return kafka_producer
@@ -89,10 +95,11 @@ def current_time_get(name):
         "message": f"Hello {name}",
     }
 
-    try:
-        kafka_producer_get()
-    except Exception as misc_exception:  # pylint: disable=broad-exception-caught
-        print(str(misc_exception))
+    if ENABLE_KAFKA:
+        try:
+            kafka_producer_get()
+        except Exception as misc_exception:  # pylint: disable=broad-exception-caught
+            print(str(misc_exception))
 
     return (
         message,

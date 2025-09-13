@@ -95,13 +95,11 @@ resource "aws_ecs_task_definition" "hello_api" {
 
       environment = [
         {
-          name  = "AWS_REGION"
-          value = var.aws_region_main
-        },
-        {
           name  = "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP"
-          value = aws_msk_serverless_cluster.hello_api.bootstrap_brokers_sasl_iam
+          value = try(aws_msk_serverless_cluster.hello_api.bootstrap_brokers_sasl_iam, "")
         }
+        # See also
+        # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-environment-variables.html
       ]
 
       portMappings = [
