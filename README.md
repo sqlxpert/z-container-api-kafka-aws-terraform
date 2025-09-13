@@ -233,7 +233,7 @@ labor, I:
   cluster, including appropriate networking. Because I am new to Kafka, MSK,
   and MSK Serverless, I ran out of time to debug and test Kafka authentication
   in Python. I show work-in-progress in a separate branch,
-  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/b278fdd..msk-in-progress).
+  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/main...msk-in-progress).
   I would have relied on `allow_auto_create_topics` in
   [KafkaProducer](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaProducer.html)
   to create the specified `events` topic without the need for extra code to
