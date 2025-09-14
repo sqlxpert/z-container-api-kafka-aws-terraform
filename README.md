@@ -223,11 +223,15 @@ labor, I:
   volume to store Terraform state during development.
   [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
   would also work well for manual container generation tasks (but not for
-  storing local Terraform state).
+  storing local Terraform state, which would have to go to S3).
   [Shareable Lambda function test events](https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events)
   offer a great way to bundle test events in IaC templates. Users can trigger
   realistic tests in a development AWS account, using either the AWS Console or
-  the AWS&nbsp;CLI.
+  the AWS&nbsp;CLI. See the
+  [Lambda test event](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/b9c2457/stay_stopped_aws_rds_aurora.yaml#L885-L970)
+  that I have added to the CloudFormation template for my existing
+  [github.com/sqlxpert/stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora#stay-stopped-rds-and-aurora)
+  project.
 
 - **Omitted writing to Kafka.** The solution creates an MSK Serverless
   cluster, including appropriate networking. Because I am new to Kafka, MSK,
