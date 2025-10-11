@@ -121,7 +121,7 @@ Jump to:
     ```
 
     **Copy the `hello_api_load_balancer_domain_name` output value** to a note.
-    This is the domain name of for your new API! You can't connect just yet, of
+    This is the domain name for your new API! You can't connect just yet, of
     course.
 
  8. Set environment variables needed for tagging and pushing the container
@@ -150,7 +150,7 @@ Jump to:
 
     It will take a few minutes for ECS to notice, and then deploy, the
     container image. Relax, and let it happen. If you are impatient, or if
-    there is problem, you can navigate to the `hello_api` service, open the
+    there is a problem, you can navigate to the `hello_api` service, open the
     orange "Update service" pop-up menu, and select "Force new deployment".
 
 10. Using your Web browser, or `curl`&nbsp;, visit the following:
