@@ -4,10 +4,11 @@ Hello!
 
 This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
 consumer setup for AWS, provisioned with Terraform. I wrote it in
-September,&nbsp;2025, in response to a take-home technical exercise for a
-DevOps position with Canoe Intelligence, a mid-sized financial services startup based in New York City. It's complete
-except for writing to Kafka (new for me, and a work in progress) and reading
-from it (I've demonstrated reading streams of events in prior work).
+September,&nbsp;2025, in response to a take-home technical exercise from Canoe
+Intelligence, a mid-sized financial services startup based in New York City.
+It's complete except for writing to Kafka (new to me, and a work in progress)
+and reading from it (I've demonstrated reading streams of events in prior
+work).
 
 Have fun experimenting with it, see if you can re-use parts of it in your own
 projects, and feel free to send comments and questions. Thank you.
