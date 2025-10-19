@@ -16,6 +16,13 @@ variable "hello_api_aws_ecr_image_tag" {
   default = "1.0.0"
 }
 
+variable "enable_kafka" {
+  type        = bool
+  description = "Whether to create the MSK Serverless cluster and have hello_api write to it. Change to false to significantly reduce costs."
+
+  default = false
+}
+
 variable "hello_api_aws_ecs_service_desired_count_tasks" {
   type        = number
   description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the service."
