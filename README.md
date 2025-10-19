@@ -4,11 +4,7 @@ Hello!
 
 This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
 consumer setup for AWS, provisioned with Terraform. I wrote it in
-September,&nbsp;2025, in response to a take-home technical exercise from Canoe
-Intelligence, a mid-sized financial services startup based in New York City.
-It's complete except for writing to Kafka (new to me, and a work in progress)
-and reading from it (I've demonstrated reading streams of events in prior
-work).
+September,&nbsp;2025, in response to a take-home technical exercise.
 
 Have fun experimenting with it, see if you can re-use parts of it in your own
 projects, and feel free to send comments and questions. Thank you.
@@ -31,7 +27,8 @@ Jump to:
 
  2. Create an EC2 instance. I recommend:
     - `arm64`
-    - `t4g.micro`
+    - `t4g.micro` &#9888; `g` avoids multi-architecture build complexity
+      (I selected AWS Graviton ARM to reduce ECS Fargate costs)
     - Amazon Linux 2023
     - A 30&nbsp;GiB EBS volume, with default encryption (for hibernation
       support)
@@ -64,7 +61,6 @@ Jump to:
     sudo dnf install terraform-1.13.1-1
 
     sudo dnf install docker
-    sudo dnf install python3.12
     ```
 
     > You can make fun of me, but I write the long option name wherever
@@ -79,37 +75,28 @@ Jump to:
     available, can't make sense of a one-letter search term and tend to ignore
     two-character terms. Short search terms are stop-words in almost all cases.
 
- 5. Uninstall the AWS CLI and replace it with the latest version.
-
-    ```shell
-    sudo dnf remove awscli
-    
-    cd /tmp
-    curl 'https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip' --output 'awscliv2.zip'
-    unzip awscliv2.zip
-    sudo ./aws/install --update
-    ```
-
- 6. Clone this repository.
+ 5. Clone this repository.
 
     ```shell
     cd ~
     git clone 'https://github.com/sqlxpert/z-container-api-kafka-aws-terraform.git'
     ```
 
- 7. Initialize Terraform and create the AWS infrastructure. There's no need for
+ 6. Initialize Terraform and create the AWS infrastructure. There's no need for
     a separate `terraform plan` step. `terraform apply` outputs the plan and
     gives you a chance to approve before anything is done. If you don't like
     the plan, don't type `yes`&nbsp;!
 
     > CloudPosse's otherwise excellent
     [dynamic-subnets](https://registry.terraform.io/modules/cloudposse/dynamic-subnets/aws/latest)
-    module isn't dynamic enough to be integrated with
+    module isn't "dynamic" enough for
     [AWS IP Address Manager
     (IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html),
-    so you have to allocate subnet IP addresses before continuing. I like IPAM
-    because it minimizes the number of private IP address range inputs. The
-    more of these we specify, the more brittle a configuration becomes.
+    so you do have to allocate the subnet IP address ranges beforehand. I like
+    IPAM because it does the work of dividing up one private IP address space.
+    Specifying multiple, interdependent IP address ranges would produce a
+    brittle configuration rather than a general-purpose, reusable
+    infrastructure template.
 
     ```shell
     cd ~/z-container-api-kafka-aws-terraform/terraform
@@ -125,7 +112,7 @@ Jump to:
     This is the domain name for your new API! You can't connect just yet, of
     course.
 
- 8. Set environment variables needed for tagging and pushing the container
+ 7. Set environment variables needed for tagging and pushing the container
     image, then build the container.
 
     ```shell
@@ -145,7 +132,7 @@ Jump to:
     sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
     ```
 
- 9. In the Amazon Elastic Container Service section of the AWS Console, check
+ 8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see that 3 tasks are
     running.
 
@@ -154,7 +141,7 @@ Jump to:
     there is a problem, you can navigate to the `hello_api` service, open the
     orange "Update service" pop-up menu, and select "Force new deployment".
 
-10. Using your Web browser, or `curl`&nbsp;, visit the following:
+ 9. Using your Web browser, or `curl`&nbsp;, visit the following:
 
     - `http://DOMAIN/healthcheck`
 
@@ -184,7 +171,7 @@ Jump to:
     browser might no longer allow `http:` for that site. Use a separate Web
     browser if necessary.)
 
-11. For more excitement, access the
+10. For more excitement, access the
     [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs)
     CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
     reserved for future use.)
@@ -192,15 +179,15 @@ Jump to:
     Periodic internal health checks, plus your occasional Web requests, should
     appear.
 
-12. Delete this infrastructure as soon as you are done experimenting. I've
-    chosen low-cost options but they are not free.
+11. Delete the infrastructure as soon as you are done experimenting. I chose
+    low-cost options but they are not free.
 
-    `terraform apply -destroy` is a quick solution.
+    ```shell
+    # terraform apply -destroy
+    ```
 
-    Expect a slow deletion process for the VPC and for IPAM. You might prefer
-    to interrupt Terraform, delete the `hello_api` VPC and the IPAM pool
-    cascade manually in the AWS Console, then repeat `terraform apply
-    -destroy`&nbsp;.
+    If any resource is slow to delete, you may wish to interrupt Terraform,
+    delete the resource manually, and then re-run Terraform.
 
     Expect an error message about retiring KMS encryption key grants (harmless,
     in this case).
@@ -263,28 +250,10 @@ labor, I:
   The intelligence lies in AWS's glue between MSK (or a different service) and
   Lambda; a simple consumer sees only batches of JSON-formatted events.
 
-- **Omitted structured JSON logging for API access.** Unfortunately, the
-  OpenAPI Python module I'd chosen early-on turned out to use `uvicorn`
-  workers only. They
-  [ignore custom log formats passed in through `gunicorn`](https://github.com/benoitc/gunicorn/issues/2299#issuecomment-1870716061),
-  [require patching for a custom log format](https://stackoverflow.com/questions/62894952/fastapi-gunicorn-uvicorn-access-log-format-customization),
-  and
-  [support very few log fields](https://github.com/Kludex/uvicorn/blob/b7241e1/uvicorn/logging.py#L97-L114),
-  anyway. My other work demonstrates structured JSON logging (link above), so I
-  did not spend time writing code to override `uvicorn` (for log contents) or
-  Python's logging system (for JSON formatting). A slim container was part of
-  the exercise, so I did not want the extra dependency of a third-party JSON
-  logging module, either.
-
 - **Omitted the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
-  power is weak. The level of detail always seems too high for the audience.
-  For example,
-  [aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment)
-  resources will be drawn with arrows between a role and multiple _AWS-managed_
-  policies, when it would be sufficient to put the role and a list of the
-  attached policies in a box, because AWS chooses descriptive policy names.
-  Schooled by Dr. Edward Tufte's
+  power is weak. The level of detail always seems too high or too low for the
+  audience. Schooled by Dr. Edward Tufte's
   [_The Visual Display of Quantitative Information_](https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information),
   I have produced compact, attractive, information-rich diagrams for my
   pre-existing open-source projects. They address multiple audiences and were
