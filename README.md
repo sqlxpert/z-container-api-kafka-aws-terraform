@@ -210,11 +210,12 @@ labor, I:
 - **Omitted a local environment.** Local packaging and testing of Docker
   containers meant to be deployed in the cloud, and local execution of
   `terraform apply` for cloud resources, introduce variability and risk without
-  much benefit. I created an EC2 instance in the AWS Console and used its EBS
-  volume to store Terraform state during development.
+  much benefit. I relied on an EC2 instance running the same Linux distribution
+  (Amazon Linux 2023) that I'd chosen for my container.
   [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
-  would also work well for manual container generation tasks (but not for
-  storing local Terraform state, which would have to go to S3).
+  would work for manual container creation, subject to the risk that the CPU
+  architecture might differ. CloudShell works well for manual Terraform
+  maintenance, provided that you store state in S3.
   [Shareable Lambda function test events](https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events)
   offer a great way to bundle test events in IaC templates. Users can trigger
   realistic tests in a development AWS account, using either the AWS Console or
