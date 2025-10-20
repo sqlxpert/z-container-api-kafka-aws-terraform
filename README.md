@@ -32,94 +32,95 @@ Jump to:
     [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
     or create an EC2 instance to build the Docker image and run Terraform.
 
-    a.  **CloudShell**
+    - **CloudShell**
 
-           i. Open an
-              [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home)
-              terminal.
+      - Open an
+        [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home)
+        terminal.
 
-          ii. Prepare for a cross-platform Docker image build. CloudShell
-              seems to provide Intel CPUs, whereas I selected ARM to reduce
-              ECS Fargate compute costs. These instructions are from
-              [Multi-platform builds](https://docs.docker.com/build/building/multi-platform/#prerequisites)
-              in the Docker Build manual.
+      - Prepare for a cross-platform Docker image build. CloudShell
+        seems to provide Intel CPUs, whereas I selected ARM to reduce
+        ECS Fargate compute costs. These instructions are from
+        [Multi-platform builds](https://docs.docker.com/build/building/multi-platform/#prerequisites)
+        in the Docker Build manual.
 
-              ```shell
-              # Repeat as needed if your previous AWS CloudShell session expired.
+        ```shell
+        # Repeat as needed if your previous AWS CloudShell session expired.
 
-              sudo docker buildx create --name container-builder --driver docker-container --bootstrap --use
+        sudo docker buildx create --name container-builder --driver docker-container --bootstrap --use
 
-              sudo docker run --privileged --rm tonistiigi/binfmt --install all
-              ```
+        sudo docker run --privileged --rm tonistiigi/binfmt --install all
+        ```
 
-         iii. [Create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
-              to store Terraform state.
+      - [Create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
+        to store Terraform state.
 
-          iv. **In CloudShell, work from `/tmp`**, due to
-              [CloudShell storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
+      - **In CloudShell, work from `/tmp`**, due to
+        [CloudShell storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
 
-    b.  **EC2 instance**
+    - **EC2 instance**
 
-           i. Create an EC2 instance. I recommend:
-              - `arm64`
-              - `t4g.micro` &#9888; The ARM-based AWS Graviton `g` architecture
-                avoids multi-architecture build complexity; I selected ARM to
-                reduce ECS Fargate compute costs.
-              - Amazon Linux 2023
-              - A 30&nbsp;GiB EBS volume, with default encryption (supports
-                hibernation)
-              - No key pair; connect with
-                [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html)
-              - A custom security group with no ingress rules (yay for Session
-                Manager!)
-              - A `sched-stop` = `d=_ H:M=07:00` tag for automatic nightly
-                shutdown (this example is for midnight Pacific Daylight Time)
-                with
-                [sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#quick-start)
+      - Create an EC2 instance. I recommend:
 
-          ii. During the instance creation workflow (Advanced details &rarr; IAM
-              instance profile &rarr; Create new IAM profile) or afterward, give
-              your EC2 instance a custom role. Within
-              [terraform/iam.tf](/terraform/iam.tf?raw=true)
-              in this repository, search for `"hello_api_maintain" =` to view a
-              list of _AWS-managed_ policies covering the services and features
-              used. Attach those policies to the instance role. It's not my
-              trademark least-privilege work, but it'll do for a demonstration
-              and it's better than `*:*`!
+        - `arm64`
+        - `t4g.micro` &#9888; The ARM-based AWS Graviton `g` architecture
+          avoids multi-architecture build complexity; I selected ARM to
+          reduce ECS Fargate compute costs.
+        - Amazon Linux 2023
+        - A 30&nbsp;GiB EBS volume, with default encryption (supports
+          hibernation)
+        - No key pair; connect with
+          [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html)
+        - A custom security group with no ingress rules (yay for Session
+          Manager!)
+        - A `sched-stop` = `d=_ H:M=07:00` tag for automatic nightly
+          shutdown (this example is for midnight Pacific Daylight Time)
+          with
+          [sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#quick-start)
 
-         iii. Update packages (thanks to AWS's
-              [deterministic upgrade philosophy](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html), there shouldn't be any updates if
-              you chose the latest Amazon Linux 2023 image), install Docker,
-              and start it.
+      - During the instance creation workflow (Advanced details &rarr; IAM
+        instance profile &rarr; Create new IAM profile) or afterward, give
+        your EC2 instance a custom role. Within
+        [terraform/iam.tf](/terraform/iam.tf?raw=true)
+        in this repository, search for `"hello_api_maintain" =` to view a
+        list of _AWS-managed_ policies covering the services and features
+        used. Attach those policies to the instance role. It's not my
+        trademark least-privilege work, but it'll do for a demonstration
+        and it's better than `*:*`!
 
-              ```shell
-              sudo dnf check-update
-              sudo dnf --releasever=latest update
+      - Update packages (thanks to AWS's
+        [deterministic upgrade philosophy](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html), there shouldn't be any updates if
+        you chose the latest Amazon Linux 2023 image), install Docker,
+        and start it.
 
-              sudo dnf install docker
-              sudo systemctl start docker
-              ```
+        ```shell
+        sudo dnf check-update
+        sudo dnf --releasever=latest update
 
-              > Make fun of me all you want, but I write long option names so
-              that other people don't have to look up unfamiliar single-letter
-              options &mdash; assuming they can _find_ them!
-              >
-              > Here's an example that shows why I go to the trouble, even at
-              the expense of being laughed at by macho Linux users. I started
-              using UNICOS in 1991, so it's not for lack of experience.
-              >
-              > Search for the literal text `-t` in
-              [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
-              using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
-              2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
-              >
-              > Where available, full-text (that is, not strictly literal)
-              search engines can't make sense of a one-letter search term and
-              are likely to ignore a two-character term as a "stop-word" that's
-              too short to search for.
+        sudo dnf install docker
+        sudo systemctl start docker
+        ```
 
-          iv. **On EC2, work from your home directory, `~`&nbsp;**, thanks to
-              the large EBS volume.
+        > Make fun of me all you want, but I write long option names so
+        that other people don't have to look up unfamiliar single-letter
+        options &mdash; assuming they can _find_ them!
+        >
+        > Here's an example that shows why I go to the trouble, even at
+        the expense of being laughed at by macho Linux users. I started
+        using UNICOS in 1991, so it's not for lack of experience.
+        >
+        > Search for the literal text `-t` in
+        [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
+        using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
+        2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
+        >
+        > Where available, full-text (that is, not strictly literal)
+        search engines can't make sense of a one-letter search term and
+        are likely to ignore a two-character term as a "stop-word" that's
+        too short to search for.
+
+      - **On EC2, work from your home directory, `~`&nbsp;**, thanks to
+        the large EBS volume.
 
  3. Install Terraform. I'm standardizing on
     [Terraform v1.10.0 (2024-11-27)](https://github.com/hashicorp/terraform/releases/tag/v1.10.0)
