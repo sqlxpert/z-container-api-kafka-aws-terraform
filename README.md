@@ -45,10 +45,10 @@ Jump to:
         in the Docker Build manual.
 
         ```shell
-        # Repeat as needed if your previous AWS CloudShell session expired.
-
         sudo docker buildx create --name container-builder --driver docker-container --bootstrap --use
+        ```
 
+        ```shell
         sudo docker run --privileged --rm tonistiigi/binfmt --install all
         ```
 
@@ -57,6 +57,8 @@ Jump to:
 
       - **In CloudShell, work from `/tmp`**, due to
         [CloudShell storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
+        If you previous session has expired, you can repeat setup commands as
+        needed.
 
     - **EC2 instance**
 
@@ -64,7 +66,7 @@ Jump to:
 
         - `arm64`
         - `t4g.micro` &#9888; The ARM-based AWS Graviton `g` architecture
-          avoids multi-architecture build complexity; I selected ARM to
+          avoids multi-platform build complexity; I selected ARM to
           reduce ECS Fargate compute costs.
         - Amazon Linux 2023
         - A 30&nbsp;GiB EBS volume, with default encryption (supports
@@ -95,29 +97,19 @@ Jump to:
 
         ```shell
         sudo dnf check-update
-        sudo dnf --releasever=latest update
-
-        sudo dnf install docker
-        sudo systemctl start docker
         ```
 
-        > Make fun of me all you want, but I write long option names so
-        that other people don't have to look up unfamiliar single-letter
-        options &mdash; assuming they can _find_ them!
-        >
-        > Here's an example that shows why I go to the trouble, even at
-        the expense of being laughed at by macho Linux users. I started
-        using UNICOS in 1991, so it's not for lack of experience.
-        >
-        > Search for the literal text `-t` in
-        [docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
-        using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
-        2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
-        >
-        > Where available, full-text (that is, not strictly literal)
-        search engines can't make sense of a one-letter search term and
-        are likely to ignore a two-character term as a "stop-word" that's
-        too short to search for.
+        ```shell
+        sudo dnf --releasever=latest update
+        ```
+
+        ```shell
+        sudo dnf install docker
+        ```
+
+        ```shell
+        sudo systemctl start docker
+        ```
 
       - **On EC2, work from your home directory, `~`&nbsp;**, thanks to
         the large EBS volume.
@@ -127,9 +119,10 @@ Jump to:
     as the minimum supported version for my open-source projects.
 
     ```shell
-    # In AWS CloudShell, repeat as needed if your previous session expired.
-
     sudo dnf --assumeyes install 'dnf-command(config-manager)'
+    ```
+
+    ```shell
     sudo dnf config-manager --add-repo 'https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo'
     sudo dnf --assumeyes install terraform-1.10.0-1
     ```
@@ -142,8 +135,8 @@ Jump to:
     cd z-container-api-kafka-aws-terraform/terraform
     ```
 
- 5. In CloudShell only, configure the Terraform S3 backend and copy the source
-    code to `/tmp`&nbsp;
+ 5. In CloudShell only, configure the Terraform S3 backend and then copy the
+    source code to `/tmp`&nbsp;
 
     In `terraform.tf`&nbsp;, change the `terraform.backend` block to:
 
@@ -160,8 +153,6 @@ Jump to:
     ```
 
     ```shell
-    # Repeat as needed if your previous AWS CloudShell session expired.
-
     cp --recursive ~/z-container-api-kafka-aws-terraform /tmp
     cd /tmp/z-container-api-kafka-aws-terraform/terraform
     ```
@@ -183,10 +174,14 @@ Jump to:
     infrastructure template.
 
     ```shell
-    terraform init # In AWS CloudShell, repeat as needed if your previous session expired.
+    terraform init
+    ```
 
+    ```shell
     terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+    ```
 
+    ```shell
     terraform apply
     ```
 
@@ -202,11 +197,17 @@ Jump to:
     HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
 
     cd ../python_docker
+    ```
 
+    ```shell
     sudo docker buildx build --platform='linux/arm64' --tag "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}" --output 'type=docker' .
+    ```
 
+    ```shell
     aws ecr get-login-password --region "${AWS_ECR_REGISTRY_REGION}" | sudo docker login --username 'AWS' --password-stdin "${AWS_ECR_REGISTRY_URI}"
+    ```
 
+    ```shell
     sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
     ```
 
@@ -222,31 +223,26 @@ Jump to:
  9. Generate the URLs and then test your API.
 
     ```shell
-    echo "'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=test'}"'"
+    echo "'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'"
     ```
 
-    Using your Web browser, or `curl`&nbsp;, visit:
+    Using your Web browser, or `curl --location --insecure`&nbsp;, visit the
+    different URLs.
 
-    - `http://DOMAIN/healthcheck`
+    |URL|Result Expected|
+    |:---|:---|
+    |`http://DOMAIN/healthcheck`|Empty response|
+    |`http://DOMAIN/hello`|Fixed greeting, in a JSON object|
+    |`http://DOMAIN/current_time?name=Paul`|Reflected greeting and timestamp, in a JSON object|
+    |`http://DOMAIN/current_time?name=;echo`|HTTP `400` "bad request" error<br/>Demonstrates protection from command injection|
+    |`http://DOMAIN/error`|HTTP `404` "not found" error|
 
-    - `http://DOMAIN/hello`
-
-    - `http://DOMAIN/current_time?name=test`
-
-    where _DOMAIN_ is the value of the `hello_api_load_balander_domain_name`
-    Terraform module output.
+    Replace _DOMAIN_ with the value of the `hello_api_load_balander_domain_name`
+    Terraform output.
 
     Your Web browser should redirect you from `http:` to `https:` and (let's
     hope!) warn you about the untrusted, self-signed TLS certificate used for
     this demonstration. Proceed to view the responses from your new API...
-
-    The health check should return nothing. `/hello` should return a fixed
-    greeting, in a JSON object. `/current_time?name=SHORTNAME` should return a
-    reflected greeting and a timestamp, again in a JSON object.
-
-    The API will return error messages for unexpected inputs. To prevent
-    command injection attacks, I have limited the length and character set for
-    _SHORTNAME_.
 
     If your Web browser configuration does not allow accessing Web sites with
     untrusted certificates, change the `enable_https` Terraform variable,
@@ -275,6 +271,23 @@ Jump to:
 
     Expect an error message about retiring KMS encryption key grants (harmless,
     in this case).
+
+> Make fun of me all you want, but I write long option names (as in the
+instructions above) so that other people don't have to look up unfamiliar
+single-letter options &mdash; assuming they can _find_ them!
+>
+> Here's an example that shows why I go to the trouble, even at the expense of
+being laughed at by macho Linux users. I started using UNICOS in 1991, so it's
+not for lack of experience.
+>
+> Search for the literal text `-t` in
+[docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
+using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
+2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
+>
+> Where available, full-text (that is, not strictly literal) search engines
+can't make sense of a 1-letter search term and are also likely to ignore a
+2-character term as a "stop-word" that's too short to search for.
 
 ## Commentary
 
