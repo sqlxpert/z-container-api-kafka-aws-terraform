@@ -71,7 +71,7 @@ data "aws_iam_policy_document" "hello_api_ecs_task_assume_role" {
     condition {
       test     = "ArnLike"
       variable = "aws:SourceArn"
-      values   = ["arn:aws:ecs:${var.aws_region_main}:${data.aws_caller_identity.current.account_id}:*"]
+      values   = ["arn:aws:ecs:${local.aws_region_main}:${data.aws_caller_identity.current.account_id}:*"]
     }
     condition {
       test     = "StringEquals"

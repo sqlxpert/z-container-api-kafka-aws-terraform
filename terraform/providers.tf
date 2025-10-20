@@ -3,7 +3,9 @@
 # GPLv3, Copyright Paul Marcelin
 
 provider "aws" {
-  region = var.aws_region_main
+  # AWS_REGION or AWS_DEFAULT_REGION environment variable determines
+  # provider's default region.
+  # https://registry.terraform.io/providers/hashicorp/aws/latest/docs#aws-configuration-reference
 
   default_tags {
     tags = {

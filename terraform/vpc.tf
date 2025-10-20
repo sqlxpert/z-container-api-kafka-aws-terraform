@@ -12,13 +12,13 @@ locals {
 
 resource "aws_vpc_ipam" "hello_api_vpc" {
   operating_regions {
-    region_name = var.aws_region_main
+    region_name = local.aws_region_main
   }
 }
 
 resource "aws_vpc_ipam_pool" "hello_api_vpc" {
   ipam_scope_id = aws_vpc_ipam.hello_api_vpc.private_default_scope_id
-  locale        = var.aws_region_main
+  locale        = local.aws_region_main
 
   address_family = "ipv4"
 
@@ -54,7 +54,7 @@ module "hello_api_vpc" {
 resource "aws_vpc_ipam_pool" "hello_api_vpc_subnets" {
   source_ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
   ipam_scope_id       = aws_vpc_ipam.hello_api_vpc.private_default_scope_id
-  locale              = var.aws_region_main
+  locale              = local.aws_region_main
 
   address_family = "ipv4"
 
@@ -226,7 +226,7 @@ resource "aws_security_group" "hello_api_vpc_interface_endpoint_tls" {
 resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
   vpc_id = module.hello_api_vpc.vpc_id
 
-  service_name      = "com.amazonaws.${var.aws_region_main}.s3"
+  service_name      = "com.amazonaws.${local.aws_region_main}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
 }
@@ -262,7 +262,7 @@ resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
 
   vpc_id = module.hello_api_vpc.vpc_id
 
-  service_name        = "com.amazonaws.${var.aws_region_main}.${each.key}"
+  service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = contains(local.vpc_interface_endpoint_service_requires_acceptance, each.key) ? null : true
   subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids

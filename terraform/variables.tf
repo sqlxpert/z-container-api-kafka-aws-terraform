@@ -4,9 +4,9 @@
 
 variable "aws_region_main" {
   type        = string
-  description = "Main region code for AWS provider. You can override this in individual resource definitions as of v6.0.0 (2025-06-18). See https://registry.terraform.io/providers/hashicorp/aws/6.0.0/docs/guides/enhanced-region-support#whats-new"
+  description = "Region code in which to create AWS resources. The empty string causes the module to use the default region configured for the Terraform AWS provider. Do not change this until all resource definitions have been made region-aware to take advantage of enhanced region support in v6.0.0 of the Terraform AWS provider."
 
-  default = "us-west-2"
+  default = ""
 }
 
 variable "hello_api_aws_ecr_image_tag" {

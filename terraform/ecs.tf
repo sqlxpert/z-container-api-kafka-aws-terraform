@@ -103,7 +103,7 @@ resource "aws_ecs_task_definition" "hello_api" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-region = var.aws_region_main
+          awslogs-region = local.aws_region_main
 
           awslogs-create-group  = "true" # String (!), and "false" not allowed
           awslogs-group         = aws_cloudwatch_log_group.hello_api_ecs_task.name
