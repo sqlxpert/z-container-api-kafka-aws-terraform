@@ -263,6 +263,7 @@ Jump to:
     low-cost options but they are not free.
 
     ```shell
+    cd ../terraform
     # terraform apply -destroy
     ```
 
