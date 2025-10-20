@@ -234,7 +234,7 @@ Jump to:
     |`http://DOMAIN/healthcheck`|Empty response|
     |`http://DOMAIN/hello`|Fixed greeting, in a JSON object|
     |`http://DOMAIN/current_time?name=Paul`|Reflected greeting and timestamp, in a JSON object|
-    |`http://DOMAIN/current_time?name=;echo`|HTTP `400` "bad request" error<br/>Demonstrates protection from command injection|
+    |`http://DOMAIN/current_time?name=;echo`|HTTP `400` "bad request" error;<br/>Demonstrates protection from command injection|
     |`http://DOMAIN/error`|HTTP `404` "not found" error|
 
     Replace _DOMAIN_ with the value of the `hello_api_load_balander_domain_name`
