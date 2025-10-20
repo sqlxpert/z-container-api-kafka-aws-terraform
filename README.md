@@ -32,7 +32,7 @@ Jump to:
     [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
     or create an EC2 instance to build the Docker image and run Terraform.
 
-    - **CloudShell**
+    - **CloudShell**<br/>_Easy_ &check;
 
       - Open an
         [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home)
@@ -57,7 +57,7 @@ Jump to:
 
       - **In CloudShell, work from `/tmp`**, due to
         [CloudShell storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
-        If you previous session has expired, you can repeat setup commands as
+        If your previous session has expired, you can repeat setup commands as
         needed.
 
     - **EC2 instance**
