@@ -9,7 +9,7 @@ September,&nbsp;2025, in response to a take-home technical exercise.
 Have fun experimenting with it, see if you can re-use parts of it in your own
 projects, and feel free to send comments and questions.
 
-Freed from the yoke of a specification written by a non-innovative,
+Freed from the yoke of a specification written by an uninsightful,
 non-AWS-savvy employer, I'm going to add to this project as time permits.
 I decided not to write the Lambda consumer initially, since I've
 [demonstrated the Lambda consumer pattern in real-world software](#lambda-consumer-alternative).
