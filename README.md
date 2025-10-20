@@ -341,6 +341,7 @@ labor, I:
   - [least-privilege Lambda execution IAM role](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L572-L741)
   - [Lambda function setup](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L1728-L1767)
   - [event consumer Python code, resource permissions, and event source mapping](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L2470-L2538)
+  
   in
   [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
 
