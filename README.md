@@ -313,7 +313,7 @@ labor, I:
   either on an EC2 instance or in
   [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html).
 
-  [Shareable Lambda function test events](https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events)
+  [Shareable Lambda function test events](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
   offer a great way to bundle test events in IaC templates. Users can trigger
   realistic tests in a development AWS account, using either the AWS Console or
   the AWS&nbsp;CLI. See the
