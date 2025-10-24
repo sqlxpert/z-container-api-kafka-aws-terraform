@@ -14,13 +14,23 @@ from time import time as time_time
 from json import dumps as json_dumps
 from connexion import AsyncApp as connexion_AsyncApp
 from connexion import options as connexion_options
-from kafka.sasl.oauth import AbstractTokenProvider
-from kafka import KafkaProducer
+from kafka.sasl.oauth import (
+    AbstractTokenProvider as kafka_AbstractTokenProvider,
+)
 from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
+from kafka.errors import (  # pylint: disable=ungrouped-imports
+    TopicAlreadyExistsError as kafka_TopicAlreadyExistsError,
+)
+from kafka.admin import (
+    KafkaAdminClient as kafka_KafkaAdminClient,
+    NewTopic as kafka_NewTopic,
+)
+from kafka import KafkaProducer as kafka_KafkaProducer
 
 
 AWS_REGION = os_environ.get(
-    "AWS_REGION", os_environ.get("AWS_DEFAULT_REGION", "us-west-2")
+    "AWS_REGION", os_environ.get("AWS_DEFAULT_REGION", "")
+    # Downstream error intended in region is empty!
 )
 HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP = os_environ.get(
     "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP", ""
@@ -34,7 +44,7 @@ KAFKA_CLIENT_ID = "hello_api"
 # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4-response.html
 
 
-class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-methods
+class MSKTokenProvider(kafka_AbstractTokenProvider):  # pylint:disable=too-few-public-methods
     """Generate an OAUTHBEARER token to access AWS MSK using IAM authentication
     """
 
@@ -48,38 +58,85 @@ class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-
         return token
 
 
-# pylint: disable=invalid-name
-kafka_token_provider = None
-kafka_producer = None
-# pylint: enable=invalid-name
+kafka_token_provider = None  # pylint: disable=invalid-name
+
+
+def kafka_token_provider_get():
+    """Return the Kafka token provider, creating it first if necessary
+    """
+    global kafka_token_provider  # pylint: disable=global-statement
+
+    if kafka_token_provider is None:
+        kafka_token_provider = MSKTokenProvider()
+
+    return kafka_token_provider
+
+
+kafka_topic_created = False  # pylint: disable=invalid-name
+
+
+def kafka_topic_create():
+    """Idempotently create the designated Kafka topic
+    """
+    global kafka_topic_created  # pylint: disable=global-statement
+
+    if not kafka_topic_created:
+        try:
+            kafka_admin_client = kafka_KafkaAdminClient(
+                bootstrap_servers=HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP,
+                security_protocol="SASL_SSL",
+                sasl_mechanism="OAUTHBEARER",
+                sasl_oauth_token_provider=kafka_token_provider_get(),
+                client_id=KAFKA_CLIENT_ID,
+
+                request_timeout_ms=1000,
+                connections_max_idle_ms=30000,
+                retry_backoff_ms=100,
+                max_in_flight_requests_per_connection=1,
+            )
+            kafka_admin_client.create_topics(
+                new_topics=[kafka_NewTopic(
+                    name=HELLO_API_AWS_MSK_CLUSTER_TOPIC,
+                    num_partitions=1,
+                    replication_factor=1,
+                )],
+                timeout_ms=1000,
+            )
+            kafka_topic_created = True
+            kafka_admin_client.close()
+
+        except kafka_TopicAlreadyExistsError:
+            kafka_topic_created = True
+
+        except Exception as misc_exception:  # pylint: disable=broad-exception-caught
+            print(json_dumps(
+                {
+                    "new_topic": HELLO_API_AWS_MSK_CLUSTER_TOPIC,
+                    "exception": str(misc_exception),
+                },
+                default=str,
+            ))
+
+
+kafka_producer = None  # pylint: disable=invalid-name
 
 
 def kafka_producer_get():
     """Return a Kafka producer, creating it first if necessary
     """
-    # pylint: disable=global-statement
-    global kafka_token_provider
-    global kafka_producer
-    # pylint: enable=global-statement
-
-    if kafka_token_provider is None:
-        kafka_token_provider = MSKTokenProvider()
+    global kafka_producer  # pylint: disable=global-statement
 
     if kafka_producer is None:
-        kafka_producer = KafkaProducer(
+        kafka_producer = kafka_KafkaProducer(
             bootstrap_servers=HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP,
             security_protocol="SASL_SSL",
             sasl_mechanism="OAUTHBEARER",
-            sasl_oauth_token_provider=kafka_token_provider,
-
+            sasl_oauth_token_provider=kafka_token_provider_get(),
             client_id=KAFKA_CLIENT_ID,
 
-            # Avoids the need to give Terraform (!) permission to authenticate
-            # to Kafka, and then:
-            # https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk
-            # https://registry.terraform.io/providers/Mongey/kafka/latest
-            # https://github.com/Mongey/terraform-provider-kafka
-            allow_auto_create_topics=True,
+            # Topic auto-creation requires a server-side setting not available
+            # in MSK Serverless, hence kafka_topic_create .
+            allow_auto_create_topics=False,
 
             # As suggested in
             # https://kafka-python.readthedocs.io/en/master/usage.html#kafkaproducer
@@ -88,15 +145,16 @@ def kafka_producer_get():
             value_serializer=lambda message: json_dumps(
                 message,
                 default=str
-            ).encode(
-                "ascii"
-            ),
+            ).encode("utf-8"),
 
-            batch_size=0,  # Send immediately, for this demonstration
-            request_timeout_ms=1000,
+            # Send more or less immediately, for this demonstration
+            batch_size=0,
+            request_timeout_ms=500,
+            linger_ms=0,
+            delivery_timeout_ms=1000,
             retries=1,
             retry_backoff_ms=100,
-            max_in_flight_requests_per_connection=5,
+            max_in_flight_requests_per_connection=1,
         )
 
     return kafka_producer
@@ -125,41 +183,40 @@ def hello_get():
 def current_time_get(name):
     """ Return epoch time, hello message with reflected string, in JSON object
     """
-
     message = {
         "timestamp": int(time_time()),  # Truncate fractional second
         "message": f"Hello {name}",
     }
-
     if ENABLE_KAFKA:
 
         try:
-            pass
-            # future_kafka_record_metadata = kafka_producer_get().send(
-            #     HELLO_API_AWS_MSK_CLUSTER_TOPIC,
-            #     message
-            # )
-            # kafka_record_metadata = future_kafka_record_metadata.get(
-            #     timeout=3
-            #     # seconds even tough KafkaProducer uses milliseconds,
-            #     # as in request_timeout_ms (!)
-            # )
-            # print(json_dumps(
-            #     {
-            #         "original_message": message,
-            #         "kafka_partition": kafka_record_metadata.partition,
-            #         "kafka_offset": kafka_record_metadata.offset,
-            #     },
-            #     default=str
-            # ))
+            kafka_topic_create()
+            future_kafka_record_metadata = kafka_producer_get().send(
+                HELLO_API_AWS_MSK_CLUSTER_TOPIC,
+                message
+            )
+            kafka_record_metadata = future_kafka_record_metadata.get(
+                timeout=2
+                # seconds even tough KafkaProducer uses milliseconds,
+                # as in request_timeout_ms (!)
+            )
+            print(json_dumps(
+                {
+                    "sent_message": message,
+                    "kafka_topic": kafka_record_metadata.topic,
+                    "kafka_partition": kafka_record_metadata.partition,
+                    "kafka_offset": kafka_record_metadata.offset,
+                },
+                default=str,
+            ))
 
         except Exception as misc_exception:  # pylint: disable=broad-exception-caught
             print(json_dumps(
                 {
-                    "original_message": message,
+                    "send_message": message,
                     "exception": str(misc_exception),
                 },
-                default=str
+                default=str,
             ))
 
     return (
