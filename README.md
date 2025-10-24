@@ -13,8 +13,9 @@ Freed from the yoke of a specification written by an uninsightful,
 non-AWS-savvy employer, I'm going to add to this project as time permits.
 I decided not to write the Lambda consumer initially, since I've
 [demonstrated the Lambda consumer pattern in real-world software](#lambda-consumer-alternative).
-Instead, I'd like to debug the MSK Serverless IAM authentication code provided
-by AWS, or abandon Kafka in favor of Kinesis.
+I've gotten the MSK Serverless IAM authentication code provided by AWS to work,
+and would like to debug the Kafka message send timeout error, or abandon Kafka
+in favor of Kinesis.
 
 Jump to:
 [Commentary](#commentary)
@@ -55,9 +56,7 @@ Jump to:
       - [Create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
         to store Terraform state.
 
-      - **In CloudShell, work from `/tmp`**, due to
-        [CloudShell storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
-        If your previous session has expired, you can repeat setup commands as
+      - If your previous session has expired, you can repeat setup commands as
         needed.
 
     - **EC2 instance**
@@ -111,9 +110,6 @@ Jump to:
         sudo systemctl start docker
         ```
 
-      - **On EC2, work from your home directory, `~`&nbsp;**, thanks to
-        the large EBS volume.
-
  3. Install Terraform. I'm standardizing on
     [Terraform v1.10.0 (2024-11-27)](https://github.com/hashicorp/terraform/releases/tag/v1.10.0)
     as the minimum supported version for my open-source projects.
@@ -135,8 +131,7 @@ Jump to:
     cd z-container-api-kafka-aws-terraform/terraform
     ```
 
- 5. In CloudShell only, configure the Terraform S3 backend and then copy the
-    source code to `/tmp`&nbsp;
+ 5. In CloudShell only, configure the Terraform S3 backend.
 
     In `terraform.tf`&nbsp;, change the `terraform.backend` block to:
 
@@ -150,11 +145,6 @@ Jump to:
 
         use_lockfile = true # No more DynamoDB; now S3-native!
       }
-    ```
-
-    ```shell
-    cp --recursive ~/z-container-api-kafka-aws-terraform /tmp
-    cd /tmp/z-container-api-kafka-aws-terraform/terraform
     ```
 
  6. Initialize Terraform and create the AWS infrastructure. There's no need for
@@ -323,16 +313,9 @@ labor, I:
   project.
 
 - **Omitted writing to Kafka.** The solution creates an MSK Serverless
-  cluster, including appropriate networking. Because I am new to Kafka, MSK,
-  and MSK Serverless, I ran out of time to debug and test Kafka authentication
-  in Python. I show work-in-progress in a separate branch,
-  [msk-in-progress](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/compare/main...msk-in-progress).
-  I would have relied on `allow_auto_create_topics` in
-  [KafkaProducer](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaProducer.html)
-  to create the specified `events` topic without the need for extra code to
-  lock access while checking for the existence of the topic and creating it if
-  necessary. I do look forward to learning more about Kafka and MSK, and might
-  return to it when time permits.
+  cluster, including appropriate networking, and the Python API back-end seems
+  to be able to authenticate using IAM. However, send requests time out. For
+  now, the Kafka write code is not enabled.
 
 - <a name="lambda-consumer-alternative"></a>**Omitted the Kafka consumer Lambda
   function.** My prior open-source work demonstrates event-driven Lambda
@@ -422,7 +405,7 @@ most startups.)
 |API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lamdba functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
 |Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
 |API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway makes it easy to implement rate-limiting/throttling. The service integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
-|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ variant places the focus on usage rather than on cluster specification and operation. Still, everything requires extra effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, or as application data? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous. Should we depend on a module published and maintained by one person, and how do we assure its security, today and in the future? The [MSK authentication source code provided by AWS](https://github.com/aws/aws-msk-iam-sasl-signer-python/issues) has 11 active issues, some open for more than one year. Kafka would be a rabbit hole for a startup.|
+|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ variant places the focus on usage rather than on cluster specification and operation. Still, everything requires extra effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, as application data, or as both? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous. Should we depend on a module published and maintained by one person, and how do we assure its security, today and in the future? Should Terraform have permission to authenticate to Kafka and manipulate data?<br/><br/>The [MSK authentication source code provided by AWS](https://github.com/aws/aws-msk-iam-sasl-signer-python/issues) has 11 active issues, some open for more than one year. The `kafka-python` [`KafkaProducer.send`](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaProducer.html#kafka.KafkaProducer.send) documentation mentions the return type but does not describe the contents; you have to [read the `kafka-python` source code](https://github.com/dpkp/kafka-python/blob/9227674/kafka/producer/future.py#L31-L74) yourself for that. The software is pure crap, with inconsistencies such as using milliseconds for `KafkaProducer(request_timeout_ms)` but seconds for `KafkaProducer.send().get(timeout)`&nbsp;. Kafka and its software ecosystem is a rabbit warren of unnecessary complexity. A startup would be fine with SQS, or Kinesis for very high data volumes and/or for replayable streams, unless Kafka compatibility were part of the core business.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
 |Infrastructure as code (for _AWS_ resources)|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the relative difficulty of bootstrapping Terraform. I could have furnished a turn-key CloudFormation template, but before you can use Terraform you must, at the very least, provision an IAM role manually. In the short time that this project was under development, I had to code my own VPC endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-module is incompatible with the current Terraform AWS provider, and I couldn't downgrade _that_ and break everything else. I also documented a case where I couldn't use a basic AWS IPAM feature: [resource planning pools are not supported by the Terraform AWS provider](https://github.com/hashicorp/terraform-provider-aws/issues/34615).<br/><br/>On a daily basis, and at scale, these problems accumulate; the effort wasted diminishes the benefits that people ascribed to Terraform. (My advice is specifically for managing _AWS_ resources. Use whatever IaC tool you like for non-AWS stuff, prioritizing the many, close relationships between components created with the AWS API, over the few, weak dependencies between AWS- and non-AWS components.)|
