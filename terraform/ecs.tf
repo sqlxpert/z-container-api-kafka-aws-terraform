@@ -152,10 +152,9 @@ resource "aws_ecs_service" "hello_api" {
     assign_public_ip = false
 
     security_groups = [
-      aws_security_group.hello_api_load_balancer_target.id,
+      aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id,
+      aws_security_group.hello_api.id,
       aws_security_group.hello_api_kafka_client.id,
-      aws_security_group.hello_api_vpc_all_egress.id
-      # Could narrow egress to VPC interface endpoints only, in the future
     ]
   }
 
