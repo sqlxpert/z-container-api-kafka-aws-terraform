@@ -95,8 +95,11 @@ resource "aws_ecs_task_definition" "hello_api" {
 
       environment = [
         {
-          name  = "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP"
-          value = try(one(aws_msk_serverless_cluster.hello_api).bootstrap_brokers_sasl_iam, "")
+          name = "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP"
+          value = try(
+            aws_msk_serverless_cluster.hello_api[0].bootstrap_brokers_sasl_iam,
+            ""
+          )
         },
         {
           name  = "HELLO_API_AWS_MSK_CLUSTER_TOPIC"
@@ -108,6 +111,7 @@ resource "aws_ecs_task_definition" "hello_api" {
 
       portMappings = [
         {
+          protocol      = "tcp"
           containerPort = local.tcp_ports["hello_api"]
           hostPort      = local.tcp_ports["hello_api"]
         }

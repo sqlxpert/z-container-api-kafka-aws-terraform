@@ -99,7 +99,10 @@ data "aws_iam_policy_document" "kafka_write" {
       "kafka-cluster:DescribeCluster"
     ]
     resources = [
-      try(one(aws_msk_serverless_cluster.hello_api).arn, "*")
+      try(
+        aws_msk_serverless_cluster.hello_api[0].arn,
+        "*"
+      )
     ]
   }
   statement {
@@ -112,7 +115,7 @@ data "aws_iam_policy_document" "kafka_write" {
     resources = [
       try(
         join("/", [
-          replace(one(aws_msk_serverless_cluster.hello_api).arn, ":cluster/", ":topic/"),
+          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
           var.kafka_topic
         ]),
         "*"
@@ -126,7 +129,7 @@ data "aws_iam_policy_document" "kafka_write" {
     ]
     resources = [
       try(
-        replace(one(aws_msk_serverless_cluster.hello_api).arn, ":cluster/", ":group/"),
+        replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
         "*"
       )
     ]
