@@ -129,7 +129,10 @@ data "aws_iam_policy_document" "kafka_write" {
     ]
     resources = [
       try(
-        replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+        join("/", [
+          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+          "*"
+        ]),
         "*"
       )
     ]

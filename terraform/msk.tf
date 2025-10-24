@@ -5,10 +5,10 @@
 resource "aws_msk_serverless_cluster" "hello_api" {
   count = var.enable_kafka ? 1 : 0
 
-  cluster_name = "hello_api"
+  cluster_name = "hello-api"
 
   vpc_config {
-    subnet_ids = module.hello_api_vpc_subnets.public_subnet_ids
+    subnet_ids = module.hello_api_vpc_subnets.private_subnet_ids
     security_group_ids = [
       aws_security_group.hello_api_kafka_server.id
     ]
