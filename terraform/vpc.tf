@@ -152,8 +152,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_sou
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
-  from_port   = 80
-  to_port     = 80
+  from_port   = local.tcp_ports["http"]
+  to_port     = local.tcp_ports["http"]
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_source_https_from_internet" {
@@ -161,8 +161,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_sou
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
-  from_port   = 443
-  to_port     = 443
+  from_port   = local.tcp_ports["https"]
+  to_port     = local.tcp_ports["https"]
 }
 
 
@@ -188,22 +188,23 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_target_a
 
   referenced_security_group_id = aws_security_group.hello_api_load_balancer_to_target.id
   ip_protocol                  = "tcp"
-  from_port                    = 8000
-  to_port                      = 8000
+  from_port                    = local.tcp_ports["hello_api"]
+  to_port                      = local.tcp_ports["hello_api"]
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_to_target_api" {
   security_group_id = aws_security_group.hello_api_load_balancer_to_target.id
 
   ip_protocol                  = "tcp"
-  from_port                    = 8000
-  to_port                      = 8000
+  from_port                    = local.tcp_ports["hello_api"]
+  to_port                      = local.tcp_ports["hello_api"]
   referenced_security_group_id = aws_security_group.hello_api_load_balancer_target.id
 }
 
 
 
 # https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html
+# https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access
 
 resource "aws_security_group" "hello_api_kafka_client" {
   vpc_id = module.hello_api_vpc.vpc_id
@@ -226,16 +227,16 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_server_from_clie
 
   referenced_security_group_id = aws_security_group.hello_api_kafka_client.id
   ip_protocol                  = "tcp"
-  from_port                    = 9098
-  to_port                      = 9098
+  from_port                    = local.tcp_ports["kafka"]
+  to_port                      = local.tcp_ports["kafka"]
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_client_to_server" {
   security_group_id = aws_security_group.hello_api_kafka_client.id
 
   ip_protocol                  = "tcp"
-  from_port                    = 9098
-  to_port                      = 9098
+  from_port                    = local.tcp_ports["kafka"]
+  to_port                      = local.tcp_ports["kafka"]
   referenced_security_group_id = aws_security_group.hello_api_kafka_server.id
 }
 
@@ -254,8 +255,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint
 
   cidr_ipv4   = module.hello_api_vpc.vpc_cidr_block
   ip_protocol = "tcp"
-  from_port   = 9098
-  to_port     = 9098
+  from_port   = local.tcp_ports["kafka"]
+  to_port     = local.tcp_ports["kafka"]
 }
 
 resource "aws_security_group" "hello_api_vpc_interface_endpoint_tls" {
@@ -273,8 +274,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint
 
   cidr_ipv4   = each.key
   ip_protocol = "tcp"
-  from_port   = 443
-  to_port     = 443
+  from_port   = local.tcp_ports["https"]
+  to_port     = local.tcp_ports["https"]
 }
 
 resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
@@ -285,19 +286,7 @@ resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
   route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
 }
 
-# MSK Serverless provides a managed VPC endpoint. "kafka" hooks are for MSK
-# Provisioned. Creating a VPC interface endpoint for use with MSK Provisioned
-# requires an extra connection acceptance step, for which I was not able to
-# find documentation. The error was:
-# Error: creating EC2 VPC Endpoint (com.amazonaws.us-west-2.kafka): operation
-# error EC2: CreateVpcEndpoint, https responseerror StatusCode: 400, RequestID:
-# [...], api error InvalidParameter: Private DNS can only be enabled after the
-# endpoint connection is accepted by the owner of
-# com.amazonaws.us-west-2.kafka.
-# MSK Serverless:
-# https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access/
-# MSK Provisioned:
-# https://github.com/hashicorp/terraform-provider-aws/issues/7148
+
 
 locals {
   vpc_interface_endpoint_service_to_security_group_ids = {

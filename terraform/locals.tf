@@ -11,4 +11,11 @@ locals {
   # data.aws_region.region added,
   # data.aws_region.name marked deprecated
   # in Terraform AWS provider v6.0.0
+
+  tcp_ports = {
+    http = 80
+    https = 443
+    kafka = 9098
+    hello_api = 8000
+  }
 }

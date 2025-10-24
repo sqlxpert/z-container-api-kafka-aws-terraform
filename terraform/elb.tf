@@ -28,13 +28,13 @@ resource "aws_lb_target_group" "hello_api" {
 
   vpc_id      = module.hello_api_vpc.vpc_id
   target_type = "ip"
-  port        = 8000
+  port        = local.tcp_ports["hello_api"]
   protocol    = "HTTP"
 
   health_check {
     enabled = true
 
-    port     = 8000
+    port     = local.tcp_ports["hello_api"]
     protocol = "HTTP"
     path     = "/healthcheck"
 
