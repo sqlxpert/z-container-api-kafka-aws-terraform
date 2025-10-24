@@ -235,14 +235,6 @@ locals {
 
 
 
-resource "aws_security_group" "hello_api_vpc_interface_endpoint_client" {
-  for_each = local.vpc_interface_endpoint_domains_set
-
-  tags = { Name = "hello_api_vpc_interface_endpoint_client_${each.key}" }
-
-  vpc_id = module.hello_api_vpc.vpc_id
-}
-
 resource "aws_security_group" "hello_api_vpc_endpoints_client_ecs_task" {
   tags = { Name = "hello_api_vpc_endpoints_client_ecs_task" }
 
@@ -257,19 +249,6 @@ resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
-
-  security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
-
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["https"]
-  to_port                      = local.tcp_ports["https"]
-  referenced_security_group_id = each.value.id
-
-  tags = { Name = each.value.tags["Name"] }
-}
-
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ecs_task_interface_endpoint" {
   for_each = aws_security_group.hello_api_vpc_interface_endpoint
 
@@ -281,21 +260,6 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ec
   referenced_security_group_id = each.value.id
 
   tags = { Name = each.value.tags["Name"] }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_client" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
-
-  security_group_id = each.value.id
-
-  tags = {
-    Name = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].tags["Name"]
-  }
-
-  referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["https"]
-  to_port                      = local.tcp_ports["https"]
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_endpoints_client_ecs_task" {
@@ -342,26 +306,7 @@ data "aws_prefix_list" "hello_api_vpc_s3_gateway_endpoint" {
   prefix_list_id = aws_vpc_endpoint.hello_api_vpc_s3_gateway.prefix_list_id
 }
 
-resource "aws_security_group" "hello_api_vpc_s3_gateway_endpoint_client" {
-  tags = { Name = "hello_api_vpc_s3_gateway_endpoint_client" }
-
-  vpc_id = module.hello_api_vpc.vpc_id
-}
-
-resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_s3_gateway_endpoint_client" {
-  security_group_id = aws_security_group.hello_api_vpc_s3_gateway_endpoint_client.id
-
-  ip_protocol    = "tcp"
-  from_port      = local.tcp_ports["https"]
-  to_port        = local.tcp_ports["https"]
-  prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.id
-
-  tags = { Name = data.aws_prefix_list.name }
-}
-
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ecs_task_s3_gateway_endpoint" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
-
   security_group_id = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id
 
   ip_protocol    = "tcp"
@@ -369,5 +314,5 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ec
   to_port        = local.tcp_ports["https"]
   prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.id
 
-  tags = { Name = data.aws_prefix_list.name }
+  tags = { Name = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.name }
 }
