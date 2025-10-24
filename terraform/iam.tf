@@ -18,31 +18,6 @@ data "aws_caller_identity" "current" {}
 
 
 
-# Provided for reference, in case you'd like to create an EC2 instance for
-# container image maintenance. (Use EC2's instance stop/hibernate feature to
-# control cost.) For a container task role, write a role trust policy
-# appropriate for the container orchestration service of your choice.
-data "aws_iam_policy_document" "hello_api_maintain_assume_role" {
-  statement {
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-    actions = ["sts:AssumeRole"]
-  }
-}
-resource "aws_iam_role" "hello_api_maintain" {
-  name = "hello_api_maintain"
-
-  assume_role_policy = data.aws_iam_policy_document.hello_api_maintain_assume_role.json
-}
-resource "aws_iam_instance_profile" "hello_api_maintain" {
-  name = "hello_api_maintain"
-  role = aws_iam_role.hello_api_maintain.name
-}
-
-
-
 data "aws_iam_policy_document" "hello_api_ecs_task_execution_assume_role" {
   statement {
     principals {
@@ -158,18 +133,6 @@ resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
 locals {
   iam_role_name_to_aws_managed_iam_policy_names = {
 
-    "hello_api_maintain" = [
-      "IAMFullAccess",
-      "AmazonSSMManagedInstanceCore",
-      "AmazonEC2ContainerRegistryFullAccess",
-      "CloudWatchLogsFullAccess",
-      "AmazonECS_FullAccess",
-      "AmazonEC2FullAccess",
-      "AmazonVPCFullAccess",
-      "AWSCertificateManagerFullAccess",
-      "AmazonMSKFullAccess"
-    ]
-
     "hello_api_ecs_task_execution" = [
       "AmazonECSTaskExecutionRolePolicy"
     ]
@@ -221,7 +184,6 @@ resource "aws_iam_role_policy_attachment" "aws_managed" {
 
   # Yuck! If only Terraform were a tiny bit smarter with dependencies...
   depends_on = [
-    aws_iam_role.hello_api_maintain,
     aws_iam_role.hello_api_ecs_task_execution,
     aws_iam_role.hello_api_ecs_task
   ]

@@ -78,13 +78,9 @@ Jump to:
 
       - During the instance creation workflow (Advanced details &rarr; IAM
         instance profile &rarr; Create new IAM profile) or afterward, give
-        your EC2 instance a custom role. Within
-        [terraform/iam.tf](/terraform/iam.tf?raw=true)
-        in this repository, search for `"hello_api_maintain" =` to view a
-        list of _AWS-managed_ policies covering the services and features
-        used. Attach those policies to the instance role. It's not my
-        trademark least-privilege work, but it'll do for a demonstration
-        and it's better than `*:*`!
+        your EC2 instance a custom role. The role's policies must be sufficient
+        for Terraform to list/describe, get tags for, create, tag, untag,
+        update, and delete all the AWS resource types included in the solution.
 
       - Update packages (thanks to AWS's
         [deterministic upgrade philosophy](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html), there shouldn't be any updates if
@@ -337,42 +333,6 @@ labor, I:
   [<img src="https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow-thumb.png" alt="An Event Bridge Scheduler rule triggers the 'Find' Amazon Web Services Lambda function every 10 minutes. The function calls 'describe' methods, checks the resource records returned for tag keys such as 'sched-start', and uses regular expressions to check the tag values for day, hour, and minute terms. Current day and time elements are inserted into the regular expressions using 'strftime'. If there is a match, the function sends a message to a Simple Queue Service queue. The 'Do' function, triggered in response, checks whether the message has expired. If not, this function calls the method indicated by the message attributes, passing the message body for the parameters. If the request is successful or a known exception occurs and it is not okay to re-try, the function is done. If an unknown exception occurs, the message remains in the operation queue, becoming visibile again after 90 seconds. After 3 tries, a message goes from the operation queue to the error (dead letter) queue." height="144" />](https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow.png?raw=true "Architecture diagram and flowchart for Lights Off, AWS!")
   [<img src="https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-flow-simple.png" alt="After waiting 9 minutes, call to stop the Relational Database Service or Aurora database. Case 1: If the stop request succeeds, retry. Case 2: If the Aurora cluster is in an invalid state, parse the error message to get the status. Case 3: If the RDS instance is in an invalid state, get the status by calling to describe the RDS instance. Exit if the database status from Case 2 or 3 is 'stopped' or another final status. Otherwise, retry every 9 minutes, for 24 hours." height="144" />](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-flow-simple.png?raw=true "Simplified flowchart for [Step-]Stay Stopped, RDS and Aurora!")
   [<img src="https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-architecture-and-flow-thumb.png" alt="Relational Database Service Event Bridge events '0153' and '0154' (database started after exceeding 7-day maximum stop time) go to the main Simple Queue Service queue, where messages are initially delayed 9 minutes. The Amazon Web Services Lambda function stops the RDS instance or the Aurora cluster. If the database's status is invalid, the queue message becomes visible again in 9 minutes. A final status of 'stopping', 'deleting' or 'deleted' ends retries, as does an error status. After 160 tries (24 hours), the message goes to the error (dead letter) SQS queue." height="144" />](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-architecture-and-flow.png?raw=true "Architecture diagram and flowchart for Stay Stopped, RDS and Aurora!")
-
-- **Used AWS-managed Identity and Access Management (IAM) policies** rather than
-  write my trademark custom least-privilege policies. My long-standing
-  open-source projects model least-privilege IAM policies. See, for example,
-  the
-  [deployment role](https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267)
-  and the
-  [Lambda function roles](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L484-L741)
-  in
-  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-
-- **Did not implement encryption in all places, or encryption with
-  customer-managed KMS keys.** My pre-existing projects model comprehensive
-  encryption, including support for custom KMS keys, keys housed in a dedicated
-  AWS account, and multi-region keys. See, for example,
-  [`SqsKmsKey`](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora/blob/2da11e1/step_stay_stopped_aws_rds_aurora.yaml#L110-L127)
-  in
-  [github.com/sqlxpert/step-stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/step-stay-stopped-aws-rds-aurora#step-stay-stopped-rds-and-aurora)&nbsp;.
-
-- **Kept parameters to a minimum** (Terraform variables and outputs, for the
-  purpose of this exercise). My pre-existing projects model extensive
-  parameterization for flexibility and template re-use, plus simple defaults,
-  complete parameter descriptions, and grouping of essential and non-essential
-  parameters. See, for example, CloudFormation
-  [`Parameters`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L9-L288)
-  and
-  [`Metadata`](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L290-L399)
-  in
-  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-  I have also modeled the more AWS-idiomatic and
-  [composable](https://developer.hashicorp.com/terraform/language/state/remote-state-data#alternative-ways-to-share-data-between-configurations)
-  approach of using
-  Systems Manager Parameter Store and path hierarchies for outputs. See
-  [`ClientSecGrpIdParam`](https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/1eb9028/10-minute-aws-client-vpn.yaml#L348-L362)
-  in
-  [github.com/sqlxpert/10-minute-aws-client-vpn](https://github.com/sqlxpert/10-minute-aws-client-vpn#10-minute-aws-client-vpn)&nbsp;.
 
 ### Recommendations
 
