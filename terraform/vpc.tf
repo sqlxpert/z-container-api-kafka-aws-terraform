@@ -137,18 +137,37 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_all_egress_to_all" 
   cidr_ipv4   = "0.0.0.0/0"
 }
 
-
-
-resource "aws_security_group" "hello_api_load_balancer_from_source" {
+resource "aws_security_group" "hello_api_vpc_private_egress" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   tags = {
-    Name = "hello_api_load_balancer_from_source"
+    Name = "hello_api_vpc_private_egress"
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_source_http_from_internet" {
-  security_group_id = aws_security_group.hello_api_load_balancer_from_source.id
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_private_egress" {
+  for_each = toset(module.hello_api_vpc_subnets.private_subnet_cidrs)
+
+  security_group_id = aws_security_group.hello_api_vpc_all_egress.id
+
+  ip_protocol = "tcp"
+  from_port   = local.tcp_ports["https"]
+  to_port     = local.tcp_ports["https"]
+  cidr_ipv4   = each.key
+}
+
+
+
+resource "aws_security_group" "hello_api_load_balancer_external" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  tags = {
+    Name = "hello_api_load_balancer_external"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external_http" {
+  security_group_id = aws_security_group.hello_api_load_balancer_external.id
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
@@ -156,8 +175,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_sou
   to_port     = local.tcp_ports["http"]
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_source_https_from_internet" {
-  security_group_id = aws_security_group.hello_api_load_balancer_from_source.id
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external_https" {
+  security_group_id = aws_security_group.hello_api_load_balancer_external.id
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
@@ -167,38 +186,38 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_from_sou
 
 
 
-resource "aws_security_group" "hello_api_load_balancer_to_target" {
+resource "aws_security_group" "hello_api_load_balancer_internal" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   tags = {
-    Name = "hello_api_load_balancer_to_target"
+    Name = "hello_api_load_balancer_internal"
   }
 }
 
-resource "aws_security_group" "hello_api_load_balancer_target" {
+resource "aws_security_group" "hello_api" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   tags = {
-    Name = "hello_api_load_balancer_target"
+    Name = "hello_api"
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_target_api" {
-  security_group_id = aws_security_group.hello_api_load_balancer_target.id
+resource "aws_vpc_security_group_ingress_rule" "hello_api_from_hello_api_load_balancer_internal" {
+  security_group_id = aws_security_group.hello_api.id
 
-  referenced_security_group_id = aws_security_group.hello_api_load_balancer_to_target.id
+  referenced_security_group_id = aws_security_group.hello_api_load_balancer_internal.id
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["hello_api"]
   to_port                      = local.tcp_ports["hello_api"]
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_to_target_api" {
-  security_group_id = aws_security_group.hello_api_load_balancer_to_target.id
+resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal_to_hello_api" {
+  security_group_id = aws_security_group.hello_api_load_balancer_internal.id
 
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["hello_api"]
   to_port                      = local.tcp_ports["hello_api"]
-  referenced_security_group_id = aws_security_group.hello_api_load_balancer_target.id
+  referenced_security_group_id = aws_security_group.hello_api.id
 }
 
 
@@ -242,40 +261,57 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_client_to_server"
 
 
 
-resource "aws_security_group" "hello_api_vpc_interface_endpoint_kafka" {
+locals {
+  vpc_interface_endpoint_domains_set = toset([
+    "ecr.api",
+    "ecr.dkr",
+    "logs",
+  ])
+}
+
+
+
+resource "aws_security_group" "hello_api_vpc_interface_endpoint_client" {
+  for_each = local.vpc_interface_endpoint_domains_set
+
   vpc_id = module.hello_api_vpc.vpc_id
 
   tags = {
-    Name = "hello_api_vpc_interface_endpoint_kafka"
+    Name = "hello_api_vpc_interface_endpoint_client_${each.key}"
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_kafka_from_vpc" {
-  security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_kafka.id
+resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
+  for_each = local.vpc_interface_endpoint_domains_set
 
-  cidr_ipv4   = module.hello_api_vpc.vpc_cidr_block
-  ip_protocol = "tcp"
-  from_port   = local.tcp_ports["kafka"]
-  to_port     = local.tcp_ports["kafka"]
-}
-
-resource "aws_security_group" "hello_api_vpc_interface_endpoint_tls" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   tags = {
-    Name = "hello_api_vpc_interface_endpoint_tls"
+    Name = "hello_api_vpc_interface_endpoint_${each.key}"
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_tls_from_private_subnet" {
-  for_each = toset(module.hello_api_vpc_subnets.private_subnet_cidrs)
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint_client_to_endpoint" {
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint_client
 
-  security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_tls.id
+  security_group_id = each.value.id
 
-  cidr_ipv4   = each.key
-  ip_protocol = "tcp"
-  from_port   = local.tcp_ports["https"]
-  to_port     = local.tcp_ports["https"]
+  ip_protocol                  = "tcp"
+  from_port                    = local.tcp_ports["https"]
+  to_port                      = local.tcp_ports["https"]
+  referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint[each.key].id
+
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_from_client" {
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint
+
+  security_group_id = each.value.id
+
+  referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
+  ip_protocol                  = "tcp"
+  from_port                    = local.tcp_ports["https"]
+  to_port                      = local.tcp_ports["https"]
 }
 
 resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
@@ -288,21 +324,13 @@ resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
 
 
 
-locals {
-  vpc_interface_endpoint_service_to_security_group_ids = {
-    "ecr.api" = [aws_security_group.hello_api_vpc_interface_endpoint_tls.id]
-    "ecr.dkr" = [aws_security_group.hello_api_vpc_interface_endpoint_tls.id]
-    "logs"    = [aws_security_group.hello_api_vpc_interface_endpoint_tls.id]
-  }
-}
-
 resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
-  for_each = local.vpc_interface_endpoint_service_to_security_group_ids
+  for_each = local.vpc_interface_endpoint_domains_set
 
   vpc_id = module.hello_api_vpc.vpc_id
 
   subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
-  security_group_ids  = each.value
+  security_group_ids  = [hello_api_vpc_interface_endpoint[each.key].id]
   private_dns_enabled = true
   service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"

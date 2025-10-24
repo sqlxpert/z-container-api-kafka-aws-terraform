@@ -151,12 +151,14 @@ resource "aws_ecs_service" "hello_api" {
     subnets          = module.hello_api_vpc_subnets.private_subnet_ids
     assign_public_ip = false
 
-    security_groups = [
-      aws_security_group.hello_api_load_balancer_target.id,
-      aws_security_group.hello_api_kafka_client.id,
-      aws_security_group.hello_api_vpc_all_egress.id
-      # Could narrow egress to VPC interface endpoints only, in the future
-    ]
+    security_groups = flatten(
+      [
+        aws_security_group.hello_api.id,
+        aws_security_group.hello_api_kafka_client.id,
+        aws_security_group.hello_api_vpc_private_egress.id # For S3
+      ],
+      aws_security_group.hello_api_vpc_interface_endpoint_client[*].id,
+    )
   }
 
   load_balancer {
