@@ -37,25 +37,32 @@ class MSKTokenProvider(AbstractTokenProvider):  # pylint:disable=too-few-public-
     """Generate an OAUTHBEARER token to access AWS MSK using IAM authentication
     """
 
-    if ENABLE_KAFKA:
-        def token(self):
-            """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
+    def token(self):
+        """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
 
-            TODO: Check whether configuration is suitable for production, with
-            timeouts, retry logic, etc.
-            """
-            (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
-            return token
+        TODO: Check whether configuration is suitable for production, with
+        timeouts, retry logic, etc.
+        """
+        (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
+        return token
 
 
-kafka_token_provider = MSKTokenProvider()
-kafka_producer = None  # pylint: disable=invalid-name
+# pylint: disable=invalid-name
+kafka_token_provider = None
+kafka_producer = None
+# pylint: enable=invalid-name
 
 
 def kafka_producer_get():
     """Return a Kafka producer, creating it first if necessary
     """
-    global kafka_producer  # pylint: disable=global-statement
+    # pylint: disable=global-statement
+    global kafka_token_provider
+    global kafka_producer
+    # pylint: enable=global-statement
+
+    if kafka_token_provider is None:
+        kafka_token_provider = MSKTokenProvider()
 
     if kafka_producer is None:
         # TODO: Check whether configuration is suitable for production, with
