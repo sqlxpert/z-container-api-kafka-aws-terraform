@@ -202,7 +202,7 @@ resource "aws_security_group" "hello_api" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_from_hello_api_load_balancer_internal" {
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_internal" {
   security_group_id = aws_security_group.hello_api.id
 
   referenced_security_group_id = aws_security_group.hello_api_load_balancer_internal.id
@@ -211,7 +211,7 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_from_hello_api_load_ba
   to_port                      = local.tcp_ports["hello_api"]
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal_to_hello_api" {
+resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal" {
   security_group_id = aws_security_group.hello_api_load_balancer_internal.id
 
   ip_protocol                  = "tcp"
@@ -241,7 +241,7 @@ resource "aws_security_group" "hello_api_kafka_server" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_server_from_client" {
+resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_client" {
   security_group_id = aws_security_group.hello_api_kafka_server.id
 
   referenced_security_group_id = aws_security_group.hello_api_kafka_client.id
@@ -250,7 +250,7 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_server_from_clie
   to_port                      = local.tcp_ports["kafka"]
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_client_to_server" {
+resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_server" {
   security_group_id = aws_security_group.hello_api_kafka_client.id
 
   ip_protocol                  = "tcp"
@@ -281,6 +281,14 @@ resource "aws_security_group" "hello_api_vpc_interface_endpoint_client" {
   }
 }
 
+resource "aws_security_group" "hello_api_vpc_interface_endpoints_client_hello_api" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  tags = {
+    Name = "hello_api_vpc_interface_endpoints_client_hello_api"
+  }
+}
+
 resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
   for_each = local.vpc_interface_endpoint_domains_set
 
@@ -291,24 +299,45 @@ resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
   }
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint_client_to_endpoint" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint_client
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint" {
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint
 
-  security_group_id = each.value.id
+  security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
 
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["https"]
   to_port                      = local.tcp_ports["https"]
-  referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint[each.key].id
-
+  referenced_security_group_id = each.value.id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_from_client" {
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoints_client_hello_api" {
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint
+
+  security_group_id = aws_security_group.hello_api_vpc_interface_endpoints_client_hello_api.id
+
+  ip_protocol                  = "tcp"
+  from_port                    = local.tcp_ports["https"]
+  to_port                      = local.tcp_ports["https"]
+  referenced_security_group_id = each.value.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_client" {
   for_each = aws_security_group.hello_api_vpc_interface_endpoint
 
   security_group_id = each.value.id
 
   referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
+  ip_protocol                  = "tcp"
+  from_port                    = local.tcp_ports["https"]
+  to_port                      = local.tcp_ports["https"]
+}
+
+resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoints_client_hello_api" {
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint
+
+  security_group_id = each.value.id
+
+  referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoints_client_hello_api.id
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["https"]
   to_port                      = local.tcp_ports["https"]
@@ -330,7 +359,7 @@ resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
   vpc_id = module.hello_api_vpc.vpc_id
 
   subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
-  security_group_ids  = [hello_api_vpc_interface_endpoint[each.key].id]
+  security_group_ids  = [aws_security_group.hello_api_vpc_interface_endpoint[each.key].id]
   private_dns_enabled = true
   service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"
