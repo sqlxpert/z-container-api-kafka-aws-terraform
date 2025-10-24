@@ -123,11 +123,9 @@ module "hello_api_vpc_subnets" {
 
 
 resource "aws_security_group" "hello_api_vpc_all_egress" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_vpc_all_egress" }
 
-  tags = {
-    Name = "hello_api_vpc_all_egress"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_all_egress_to_all" {
@@ -138,11 +136,9 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_all_egress_to_all" 
 }
 
 resource "aws_security_group" "hello_api_vpc_private_egress" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_vpc_private_egress" }
 
-  tags = {
-    Name = "hello_api_vpc_private_egress"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_private_egress" {
@@ -159,11 +155,9 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_private_egress" {
 
 
 resource "aws_security_group" "hello_api_load_balancer_external" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_load_balancer_external" }
 
-  tags = {
-    Name = "hello_api_load_balancer_external"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external_http" {
@@ -187,23 +181,23 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external
 
 
 resource "aws_security_group" "hello_api_load_balancer_internal" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_load_balancer_internal" }
 
-  tags = {
-    Name = "hello_api_load_balancer_internal"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_security_group" "hello_api" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api" }
 
-  tags = {
-    Name = "hello_api"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_internal" {
   security_group_id = aws_security_group.hello_api.id
+
+  tags = {
+    Name = aws_security_group.hello_api_load_balancer_internal.tags["Name"]
+  }
 
   referenced_security_group_id = aws_security_group.hello_api_load_balancer_internal.id
   ip_protocol                  = "tcp"
@@ -218,6 +212,8 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal"
   from_port                    = local.tcp_ports["hello_api"]
   to_port                      = local.tcp_ports["hello_api"]
   referenced_security_group_id = aws_security_group.hello_api.id
+
+  tags = { Name = aws_security_group.hello_api.tags["Name"] }
 }
 
 
@@ -226,23 +222,21 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal"
 # https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access
 
 resource "aws_security_group" "hello_api_kafka_client" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_kafka_client" }
 
-  tags = {
-    Name = "hello_api_kafka_client"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_security_group" "hello_api_kafka_server" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_kafka_server" }
 
-  tags = {
-    Name = "hello_api_kafka_server"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_client" {
   security_group_id = aws_security_group.hello_api_kafka_server.id
+
+  tags = { Name = aws_security_group.hello_api_kafka_client.tags["Name"] }
 
   referenced_security_group_id = aws_security_group.hello_api_kafka_client.id
   ip_protocol                  = "tcp"
@@ -257,6 +251,8 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_server" {
   from_port                    = local.tcp_ports["kafka"]
   to_port                      = local.tcp_ports["kafka"]
   referenced_security_group_id = aws_security_group.hello_api_kafka_server.id
+
+  tags = { Name = aws_security_group.hello_api_kafka_server.tags["Name"] }
 }
 
 
@@ -274,29 +270,23 @@ locals {
 resource "aws_security_group" "hello_api_vpc_interface_endpoint_client" {
   for_each = local.vpc_interface_endpoint_domains_set
 
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_vpc_interface_endpoint_client_${each.key}" }
 
-  tags = {
-    Name = "hello_api_vpc_interface_endpoint_client_${each.key}"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_security_group" "hello_api_vpc_interface_endpoints_client_hello_api" {
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_vpc_interface_endpoints_client_hello_api" }
 
-  tags = {
-    Name = "hello_api_vpc_interface_endpoints_client_hello_api"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
   for_each = local.vpc_interface_endpoint_domains_set
 
-  vpc_id = module.hello_api_vpc.vpc_id
+  tags = { Name = "hello_api_vpc_interface_endpoint_${each.key}" }
 
-  tags = {
-    Name = "hello_api_vpc_interface_endpoint_${each.key}"
-  }
+  vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint" {
@@ -308,6 +298,8 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoint"
   from_port                    = local.tcp_ports["https"]
   to_port                      = local.tcp_ports["https"]
   referenced_security_group_id = each.value.id
+
+  tags = { Name = each.value.tags["Name"] }
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoints_client_hello_api" {
@@ -319,12 +311,18 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_interface_endpoints
   from_port                    = local.tcp_ports["https"]
   to_port                      = local.tcp_ports["https"]
   referenced_security_group_id = each.value.id
+
+  tags = { Name = each.value.tags["Name"] }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint_client" {
   for_each = aws_security_group.hello_api_vpc_interface_endpoint
 
   security_group_id = each.value.id
+
+  tags = {
+    Name = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].tags["Name"]
+  }
 
   referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoint_client[each.key].id
   ip_protocol                  = "tcp"
@@ -337,18 +335,14 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_interface_endpoint
 
   security_group_id = each.value.id
 
+  tags = {
+    Name = aws_security_group.hello_api_vpc_interface_endpoints_client_hello_api.tags["Name"]
+  }
+
   referenced_security_group_id = aws_security_group.hello_api_vpc_interface_endpoints_client_hello_api.id
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["https"]
   to_port                      = local.tcp_ports["https"]
-}
-
-resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
-  vpc_id = module.hello_api_vpc.vpc_id
-
-  service_name      = "com.amazonaws.${local.aws_region_main}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
 }
 
 
@@ -363,4 +357,14 @@ resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
   private_dns_enabled = true
   service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"
+}
+
+
+
+resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
+  vpc_id = module.hello_api_vpc.vpc_id
+
+  service_name      = "com.amazonaws.${local.aws_region_main}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
 }
