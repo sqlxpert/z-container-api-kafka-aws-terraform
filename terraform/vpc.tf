@@ -122,14 +122,14 @@ module "hello_api_vpc_subnets" {
 
 
 
-resource "aws_security_group" "hello_api_load_balancer_external" {
-  tags = { Name = "hello_api_load_balancer_external" }
+resource "aws_security_group" "hello_api_load_balancer_outside" {
+  tags = { Name = "hello_api_load_balancer_outside" }
 
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external_http" {
-  security_group_id = aws_security_group.hello_api_load_balancer_external.id
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_outside_http" {
+  security_group_id = aws_security_group.hello_api_load_balancer_outside.id
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
@@ -137,8 +137,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external
   to_port     = local.tcp_ports["http"]
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external_https" {
-  security_group_id = aws_security_group.hello_api_load_balancer_external.id
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_outside_https" {
+  security_group_id = aws_security_group.hello_api_load_balancer_outside.id
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
@@ -148,8 +148,8 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_external
 
 
 
-resource "aws_security_group" "hello_api_load_balancer_internal" {
-  tags = { Name = "hello_api_load_balancer_internal" }
+resource "aws_security_group" "hello_api_load_balancer_inside" {
+  tags = { Name = "hello_api_load_balancer_inside" }
 
   vpc_id = module.hello_api_vpc.vpc_id
 }
@@ -160,21 +160,21 @@ resource "aws_security_group" "hello_api" {
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_internal" {
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_inside" {
   security_group_id = aws_security_group.hello_api.id
 
   tags = {
-    Name = aws_security_group.hello_api_load_balancer_internal.tags["Name"]
+    Name = aws_security_group.hello_api_load_balancer_inside.tags["Name"]
   }
 
-  referenced_security_group_id = aws_security_group.hello_api_load_balancer_internal.id
+  referenced_security_group_id = aws_security_group.hello_api_load_balancer_inside.id
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["hello_api"]
   to_port                      = local.tcp_ports["hello_api"]
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_internal" {
-  security_group_id = aws_security_group.hello_api_load_balancer_internal.id
+resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_inside" {
+  security_group_id = aws_security_group.hello_api_load_balancer_inside.id
 
   ip_protocol                  = "tcp"
   from_port                    = local.tcp_ports["hello_api"]

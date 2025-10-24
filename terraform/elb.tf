@@ -11,8 +11,8 @@ resource "aws_lb" "hello_api" {
   subnets         = module.hello_api_vpc_subnets.public_subnet_ids
 
   security_groups = [
-    aws_security_group.hello_api_load_balancer_external.id,
-    aws_security_group.hello_api_load_balancer_internal.id
+    aws_security_group.hello_api_load_balancer_outside.id,
+    aws_security_group.hello_api_load_balancer_inside.id
   ]
 
   idle_timeout = 10 # seconds
