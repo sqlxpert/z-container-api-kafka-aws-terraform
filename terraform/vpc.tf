@@ -225,13 +225,9 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_server" {
 
 
 
-locals {
-  vpc_interface_endpoint_domains_set = toset([
-    "ecr.api",
-    "ecr.dkr",
-    "logs",
-  ])
-}
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html#task-execution-ecr-conditionkeys
+# https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html
 
 
 
@@ -242,7 +238,11 @@ resource "aws_security_group" "hello_api_vpc_endpoints_client_ecs_task" {
 }
 
 resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
-  for_each = local.vpc_interface_endpoint_domains_set
+  for_each = toset([
+    "ecr.api",
+    "ecr.dkr",
+    "logs",
+  ])
 
   tags = { Name = "hello_api_vpc_interface_endpoint_${each.key}" }
 
@@ -278,12 +278,12 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_endpoints_client_e
 }
 
 resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
-  for_each = local.vpc_interface_endpoint_domains_set
+  for_each = aws_security_group.hello_api_vpc_interface_endpoint
 
   vpc_id = module.hello_api_vpc.vpc_id
 
   subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
-  security_group_ids  = [aws_security_group.hello_api_vpc_interface_endpoint[each.key].id]
+  security_group_ids  = [each.value.id]
   private_dns_enabled = true
   service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
   vpc_endpoint_type   = "Interface"
