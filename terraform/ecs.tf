@@ -84,7 +84,7 @@ resource "aws_ecs_task_definition" "hello_api" {
       healthCheck = {
         command = [
           "CMD-SHELL",
-          "curl --fail --silent --show-error 'http://127.0.0.1:8000/healthcheck' || exit 1"
+          "curl --fail --silent --show-error 'http://127.0.0.1:${local.tcp_ports["hello_api"]}/healthcheck' || exit 1"
         ]
 
         startPeriod = 060 # seconds
@@ -108,15 +108,15 @@ resource "aws_ecs_task_definition" "hello_api" {
 
       portMappings = [
         {
-          containerPort = 8000
-          hostPort      = 8000
+          containerPort = local.tcp_ports["hello_api"]
+          hostPort      = local.tcp_ports["hello_api"]
         }
       ]
 
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-region = var.aws_region_main
+          awslogs-region = local.aws_region_main
 
           awslogs-create-group  = "true" # String (!), and "false" not allowed
           awslogs-group         = aws_cloudwatch_log_group.hello_api_ecs_task.name
@@ -158,6 +158,6 @@ resource "aws_ecs_service" "hello_api" {
   load_balancer {
     target_group_arn = aws_lb_target_group.hello_api.arn
     container_name   = "hello_api"
-    container_port   = 8000
+    container_port   = local.tcp_ports["hello_api"]
   }
 }
