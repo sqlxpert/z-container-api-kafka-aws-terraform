@@ -93,6 +93,19 @@ resource "aws_ecs_task_definition" "hello_api" {
         interval    = 005 # seconds
       }
 
+      environment = [
+        {
+          name  = "HELLO_API_AWS_MSK_CLUSTER_BOOTSTRAP"
+          value = try(one(aws_msk_serverless_cluster.hello_api).bootstrap_brokers_sasl_iam, "")
+        },
+        {
+          name  = "HELLO_API_AWS_MSK_CLUSTER_TOPIC"
+          value = var.kafka_topic
+        }
+        # See also
+        # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-environment-variables.html
+      ]
+
       portMappings = [
         {
           containerPort = local.tcp_ports["hello_api"]

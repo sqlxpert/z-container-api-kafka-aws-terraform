@@ -23,6 +23,13 @@ variable "enable_kafka" {
   default = false
 }
 
+variable "kafka_topic" {
+  type        = string
+  description = "The Kafka topic to write to and read from"
+
+  default = "events"
+}
+
 variable "hello_api_aws_ecs_service_desired_count_tasks" {
   type        = number
   description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the service."
