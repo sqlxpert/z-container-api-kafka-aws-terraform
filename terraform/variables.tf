@@ -18,7 +18,7 @@ variable "hello_api_aws_ecr_image_tag" {
 
 variable "enable_kafka" {
   type        = bool
-  description = "Whether to create the MSK Serverless cluster. Set to false to significantly reduce costs; the API will write only to the CloudFormation log."
+  description = "Whether to create the MSK Serverless cluster. Set to false to significantly reduce costs; the API will write only to the CloudWatch log."
 
   default = false
 }
