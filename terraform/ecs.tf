@@ -158,9 +158,16 @@ resource "aws_ecs_service" "hello_api" {
     ]
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.hello_api.arn
-    container_name   = "hello_api"
-    container_port   = local.tcp_ports["hello_api"]
+  dynamic "load_balancer" {
+    for_each = aws_lb_target_group.hello_api
+
+    content {
+      container_name = jsondecode(
+        aws_ecs_task_definition.hello_api.container_definitions
+      )[0].name
+      container_port = load_balancer.value.port
+
+      target_group_arn = load_balancer.value.arn
+    }
   }
 }
