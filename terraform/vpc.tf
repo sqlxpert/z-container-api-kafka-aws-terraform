@@ -278,7 +278,11 @@ resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_endpoints_client_e
 }
 
 resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
+  for_each = (
+    var.create_vpc_endpoints_and_load_balancer
+    ? aws_security_group.hello_api_vpc_interface_endpoint
+    : toset([])
+  )
 
   vpc_id = module.hello_api_vpc.vpc_id
 
@@ -292,6 +296,8 @@ resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
 
 
 resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
+  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+
   vpc_id = module.hello_api_vpc.vpc_id
 
   service_name      = "com.amazonaws.${local.aws_region_main}.s3"
@@ -303,16 +309,20 @@ resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
 # https://docs.aws.amazon.com/vpc/latest/userguide/working-with-aws-managed-prefix-lists.html#available-aws-managed-prefix-lists
 
 data "aws_prefix_list" "hello_api_vpc_s3_gateway_endpoint" {
-  prefix_list_id = aws_vpc_endpoint.hello_api_vpc_s3_gateway.prefix_list_id
+  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+
+  prefix_list_id = aws_vpc_endpoint.hello_api_vpc_s3_gateway[0].prefix_list_id
 }
 
 resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ecs_task_s3_gateway_endpoint" {
+  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+
   security_group_id = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id
 
   ip_protocol    = "tcp"
   from_port      = local.tcp_ports["https"]
   to_port        = local.tcp_ports["https"]
-  prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.id
+  prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint[0].id
 
   tags = { Name = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.name }
 }

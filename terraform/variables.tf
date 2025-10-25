@@ -18,7 +18,7 @@ variable "hello_api_aws_ecr_image_tag" {
 
 variable "enable_kafka" {
   type        = bool
-  description = "Whether to create the MSK Serverless cluster and have hello_api write to it. Change to false to significantly reduce costs."
+  description = "Whether to create the MSK Serverless cluster. Set to false to significantly reduce costs; the API will write only to the CloudFormation log."
 
   default = false
 }
@@ -32,9 +32,34 @@ variable "kafka_topic" {
 
 variable "hello_api_aws_ecs_service_desired_count_tasks" {
   type        = number
-  description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the service."
+  description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the API. You must set this to 0 if create_vpc_endpoints_and_load_balancer is false ."
 
   default = 2
+
+  validation {
+    error_message = "Before increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
+
+    condition = (
+      (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
+      || var.create_vpc_endpoints_and_load_balancer
+    )
+  }
+}
+
+variable "create_vpc_endpoints_and_load_balancer" {
+  type        = bool
+  description = "Whether to create the virtual private cloud (VPC) interface and gateway endpoints and the application load balancer. These expensive resources are not needed until you have built and uploaded the hello_api image and are ready to start the API. You must set this to true if hello_api_aws_ecs_service_desired_count_tasks is greater than 0."
+
+  default = true
+
+  validation {
+    error_message = "Before increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
+
+    condition = (
+      (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
+      || var.create_vpc_endpoints_and_load_balancer
+    )
+  }
 }
 
 variable "enable_https" {
