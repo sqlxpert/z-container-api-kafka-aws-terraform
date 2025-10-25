@@ -324,5 +324,5 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ec
   to_port        = local.tcp_ports["https"]
   prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint[0].id
 
-  tags = { Name = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint.name }
+  tags = { Name = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint[0].name }
 }

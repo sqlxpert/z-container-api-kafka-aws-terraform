@@ -35,15 +35,6 @@ variable "hello_api_aws_ecs_service_desired_count_tasks" {
   description = "Number of hello_api Elastic Container Service tasks desired. Reduce to 0 to pause the API. You must set this to 0 if create_vpc_endpoints_and_load_balancer is false ."
 
   default = 2
-
-  validation {
-    error_message = "Before increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
-
-    condition = (
-      (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
-      || var.create_vpc_endpoints_and_load_balancer
-    )
-  }
 }
 
 variable "create_vpc_endpoints_and_load_balancer" {
