@@ -281,7 +281,7 @@ resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
   for_each = (
     var.create_vpc_endpoints_and_load_balancer
     ? aws_security_group.hello_api_vpc_interface_endpoint
-    : toset([])
+    : {}
   )
 
   vpc_id = module.hello_api_vpc.vpc_id

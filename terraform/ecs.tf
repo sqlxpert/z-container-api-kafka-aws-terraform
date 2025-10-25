@@ -162,9 +162,12 @@ resource "aws_ecs_service" "hello_api" {
     for_each = aws_lb_target_group.hello_api
 
     content {
-      target_group_arn = value.arn
-      container_name   = value.name
-      container_port   = value.port
+      container_name = jsondecode(
+        aws_ecs_task_definition.hello_api.container_definitions
+      )[0].name
+      container_port = load_balancer.value.port
+
+      target_group_arn = load_balancer.value.arn
     }
   }
 }
