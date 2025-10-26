@@ -10,7 +10,7 @@ resource "aws_msk_serverless_cluster" "hello_api" {
   vpc_config {
     subnet_ids = module.hello_api_vpc_subnets.private_subnet_ids
     security_group_ids = [
-      aws_security_group.reciprocal["kafka:server"].id
+      aws_security_group.hello["kafka"].id
     ]
   }
 

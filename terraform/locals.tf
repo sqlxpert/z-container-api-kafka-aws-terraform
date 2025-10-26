@@ -13,9 +13,15 @@ locals {
   # in Terraform AWS provider v6.0.0
 
   tcp_ports = {
-    http = 80
-    https = 443
-    kafka = 9098
-    hello_api = 8000
+    "http"              = 80
+    "https"             = 443
+    "s3"                = 443
+    "ecr.api"           = 443
+    "ecr.dkr"           = 443
+    "logs"              = 443
+    "lambda"            = 443
+    "sts"               = 443
+    "kafka"             = 9098
+    "hello_api_private" = 8000
   }
 }

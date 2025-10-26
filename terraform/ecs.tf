@@ -84,7 +84,7 @@ resource "aws_ecs_task_definition" "hello_api" {
       healthCheck = {
         command = [
           "CMD-SHELL",
-          "curl --fail --silent --show-error 'http://127.0.0.1:${local.tcp_ports["hello_api"]}/healthcheck' || exit 1"
+          "curl --fail --silent --show-error 'http://127.0.0.1:${local.tcp_ports["hello_api_private"]}/healthcheck' || exit 1"
         ]
 
         startPeriod = 060 # seconds
@@ -112,8 +112,8 @@ resource "aws_ecs_task_definition" "hello_api" {
       portMappings = [
         {
           protocol      = "tcp"
-          containerPort = local.tcp_ports["hello_api"]
-          hostPort      = local.tcp_ports["hello_api"]
+          containerPort = local.tcp_ports["hello_api_private"]
+          hostPort      = local.tcp_ports["hello_api_private"]
         }
       ]
 
@@ -152,9 +152,9 @@ resource "aws_ecs_service" "hello_api" {
     assign_public_ip = false
 
     security_groups = [
-      aws_security_group.hello_api_vpc_endpoints_client["ecs_task"].id,
-      aws_security_group.recriprocal["hello_api:server"].id,
-      aws_security_group.reciprocal["kafka:client"].id,
+      aws_security_group.hello["ecs_task"].id,
+      aws_security_group.hello["hello_api_private"].id,
+      aws_security_group.hello["kafka_client"].id,
     ]
   }
 
