@@ -14,7 +14,7 @@ resource "aws_lb" "hello_api" {
 
   security_groups = [
     aws_security_group.hello_api_load_balancer_outside.id,
-    aws_security_group.hello_api_load_balancer_inside.id
+    aws_security_group.recriprocal["hello_api:client"].id
   ]
 
   idle_timeout = 10 # seconds

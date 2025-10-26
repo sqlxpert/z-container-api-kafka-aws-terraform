@@ -152,9 +152,9 @@ resource "aws_ecs_service" "hello_api" {
     assign_public_ip = false
 
     security_groups = [
-      aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id,
-      aws_security_group.hello_api.id,
-      aws_security_group.hello_api_kafka_client.id,
+      aws_security_group.hello_api_vpc_endpoints_client["ecs_task"].id,
+      aws_security_group.recriprocal["hello_api:server"].id,
+      aws_security_group.reciprocal["kafka:client"].id,
     ]
   }
 

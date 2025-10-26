@@ -128,99 +128,66 @@ resource "aws_security_group" "hello_api_load_balancer_outside" {
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_outside_http" {
+resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_outside" {
+  for_each = {
+    "http"  = {}
+    "https" = var.enable_https ? {} : null
+  }
   security_group_id = aws_security_group.hello_api_load_balancer_outside.id
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "tcp"
-  from_port   = local.tcp_ports["http"]
-  to_port     = local.tcp_ports["http"]
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_outside_https" {
-  security_group_id = aws_security_group.hello_api_load_balancer_outside.id
-
-  cidr_ipv4   = "0.0.0.0/0"
-  ip_protocol = "tcp"
-  from_port   = local.tcp_ports["https"]
-  to_port     = local.tcp_ports["https"]
+  from_port   = local.tcp_ports[each.key]
+  to_port     = local.tcp_ports[each.key]
 }
 
 
 
-resource "aws_security_group" "hello_api_load_balancer_inside" {
-  tags = { Name = "hello_api_load_balancer_inside" }
+resource "aws_security_group" "reciprocal" {
+  for_each = toset([
+    "hello_api:client",
+    "hello_api:server",
+
+    # https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html
+    # https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access
+    "kafka:client",
+    "kafka:server",
+  ])
+
+  tags = { Name = each.key }
 
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_security_group" "hello_api" {
-  tags = { Name = "hello_api" }
+resource "aws_vpc_security_group_ingress_rule" "reciprocal" {
+  for_each = toset([
+    "hello_api",
+    "kafka",
+  ])
 
-  vpc_id = module.hello_api_vpc.vpc_id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hello_api_load_balancer_inside" {
-  security_group_id = aws_security_group.hello_api.id
+  security_group_id = aws_security_group.reciprocal["${each.key}:server"].id
 
   tags = {
-    Name = aws_security_group.hello_api_load_balancer_inside.tags["Name"]
+    Name = aws_security_group.reciprocal["${each.key}:client"].tags["Name"]
   }
 
-  referenced_security_group_id = aws_security_group.hello_api_load_balancer_inside.id
+  referenced_security_group_id = aws_security_group.reciprocal["${each.key}:client"].id
   ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["hello_api"]
-  to_port                      = local.tcp_ports["hello_api"]
+  from_port                    = local.tcp_ports[each.key]
+  to_port                      = local.tcp_ports[each.key]
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_load_balancer_inside" {
-  security_group_id = aws_security_group.hello_api_load_balancer_inside.id
+resource "aws_vpc_security_group_egress_rule" "reciprocal" {
+  for_each = aws_vpc_security_group_ingress_rule.hello_api
 
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["hello_api"]
-  to_port                      = local.tcp_ports["hello_api"]
-  referenced_security_group_id = aws_security_group.hello_api.id
+  security_group_id = each.value.referenced_security_group_id
 
-  tags = { Name = aws_security_group.hello_api.tags["Name"] }
-}
+  ip_protocol                  = each.value.ip_protocol
+  from_port                    = each.value.from_port
+  to_port                      = each.value.to_port
+  referenced_security_group_id = each.value.security_group_id
 
-
-
-# https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html
-# https://aws.amazon.com/blogs/big-data/secure-connectivity-patterns-for-amazon-msk-serverless-cross-account-access
-
-resource "aws_security_group" "hello_api_kafka_client" {
-  tags = { Name = "hello_api_kafka_client" }
-
-  vpc_id = module.hello_api_vpc.vpc_id
-}
-
-resource "aws_security_group" "hello_api_kafka_server" {
-  tags = { Name = "hello_api_kafka_server" }
-
-  vpc_id = module.hello_api_vpc.vpc_id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hello_api_kafka_client" {
-  security_group_id = aws_security_group.hello_api_kafka_server.id
-
-  tags = { Name = aws_security_group.hello_api_kafka_client.tags["Name"] }
-
-  referenced_security_group_id = aws_security_group.hello_api_kafka_client.id
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["kafka"]
-  to_port                      = local.tcp_ports["kafka"]
-}
-
-resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_server" {
-  security_group_id = aws_security_group.hello_api_kafka_client.id
-
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["kafka"]
-  to_port                      = local.tcp_ports["kafka"]
-  referenced_security_group_id = aws_security_group.hello_api_kafka_server.id
-
-  tags = { Name = aws_security_group.hello_api_kafka_server.tags["Name"] }
+  tags = { Name = each.key }
 }
 
 
@@ -231,98 +198,146 @@ resource "aws_vpc_security_group_egress_rule" "hello_api_kafka_server" {
 
 
 
-resource "aws_security_group" "hello_api_vpc_endpoints_client_ecs_task" {
-  tags = { Name = "hello_api_vpc_endpoints_client_ecs_task" }
+locals {
+  endpoint_pairs = [
+    { client = "ecs_task", service = "s3" },
+    { client = "ecs_task", service = "ecr.api" },
+    { client = "ecs_task", service = "ecr.dkr" },
+    { client = "ecs_task", service = "logs" },
+    { client = "lambda_function", service = "logs" },
+    { client = "lambda_function", service = "lambda" },
+    { client = "lambda_function", service = "sts" },
+  ]
+
+  endpoint_service_to_type = {
+    "s3"      = "Gateway"
+    "ecr.api" = "Interface"
+    "ecr.dkr" = "Interface"
+    "logs"    = "Interface"
+    "lambda"  = "Interface"
+    "sts"     = "Interface"
+  }
+
+  endpoints = [
+    for endpoint in local.endpoint_pairs : merge(
+      endpoint,
+      { "type" = local.endpoint_service_to_type[endpoint["service"]] },
+    )
+  ]
+
+  endpoint_clients_set = toset(local.endpoints[*]["client"])
+  endpoint_types_set   = toset(local.endpoints[*]["type"])
+
+  endpoint_type_to_map = {
+    for endpoint_type in local.endpoint_types_set :
+    endpoint_type => {
+      for endpoint in local.endpoints :
+      join(":", [endpoint["client"], endpoint["service"]]) => endpoint
+      if endpoint_type == local.endpoint_service_to_type[endpoint["service"]]
+    }
+  }
+
+  endpoint_type_to_services_set = {
+    for endpoint_type, endpoints_map in local.endpoint_type_to_map :
+    endpoint_type => toset(values(endpoints_map)[*]["service"])
+  }
+}
+
+
+
+resource "aws_security_group" "hello_api_vpc_endpoints_client" {
+  for_each = local.endpoint_clients_set
+
+  tags = { Name = "hello_api_vpc_endpoints_client_${each.key}" }
 
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
 resource "aws_security_group" "hello_api_vpc_interface_endpoint" {
-  for_each = toset([
-    "ecr.api",
-    "ecr.dkr",
-    "logs",
-  ])
+  for_each = local.endpoint_type_to_services_set["Interface"]
 
   tags = { Name = "hello_api_vpc_interface_endpoint_${each.key}" }
 
   vpc_id = module.hello_api_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ecs_task_interface_endpoint" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
+resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_endpoints_client" {
+  for_each = local.endpoint_type_to_map["Interface"]
 
-  security_group_id = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id
-
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["https"]
-  to_port                      = local.tcp_ports["https"]
-  referenced_security_group_id = each.value.id
-
-  tags = { Name = each.value.tags["Name"] }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "hello_api_vpc_endpoints_client_ecs_task" {
-  for_each = aws_security_group.hello_api_vpc_interface_endpoint
-
-  security_group_id = each.value.id
+  security_group_id = (
+    aws_security_group.hello_api_vpc_interface_endpoint[each.value["service"]].id
+  )
 
   tags = {
-    Name = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.tags["Name"]
+    Name = aws_security_group.hello_api_vpc_endpoints_client[each.value["client"]].tags["Name"]
   }
-
-  referenced_security_group_id = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports["https"]
-  to_port                      = local.tcp_ports["https"]
+  referenced_security_group_id = (
+    aws_security_group.hello_api_vpc_endpoints_client[each.value["client"]].id
+  )
+  ip_protocol = "tcp"
+  from_port   = local.tcp_ports["https"]
+  to_port     = local.tcp_ports["https"]
 }
 
-resource "aws_vpc_endpoint" "hello_api_vpc_interface" {
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client" {
+  for_each = aws_vpc_security_group_ingress_rule.hello_api_vpc_endpoints_client
+
+  security_group_id = each.value.referenced_security_group_id
+
+  ip_protocol                  = each.value.ip_protocol
+  from_port                    = each.value.from_port
+  to_port                      = each.value.to_port
+  referenced_security_group_id = each.value.security_group_id
+
+  tags = { Name = "hello_api_vpc_interface_endpoint_${split(":", each.key)[1]}" }
+}
+
+
+
+resource "aws_vpc_endpoint" "hello_api" {
   for_each = (
     var.create_vpc_endpoints_and_load_balancer
-    ? aws_security_group.hello_api_vpc_interface_endpoint
+    ? local.endpoint_service_to_type
     : {}
   )
 
-  vpc_id = module.hello_api_vpc.vpc_id
-
-  subnet_ids          = module.hello_api_vpc_subnets.private_subnet_ids
-  security_group_ids  = [each.value.id]
-  private_dns_enabled = true
-  service_name        = "com.amazonaws.${local.aws_region_main}.${each.key}"
-  vpc_endpoint_type   = "Interface"
-}
-
-
-
-resource "aws_vpc_endpoint" "hello_api_vpc_s3_gateway" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+  vpc_endpoint_type = each.value
+  service_name = join(".", [
+    "com",
+    "amazonaws",
+    local.aws_region_main,
+    each.key
+  ])
 
   vpc_id = module.hello_api_vpc.vpc_id
 
-  service_name      = "com.amazonaws.${local.aws_region_main}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = module.hello_api_vpc_subnets.private_route_table_ids
+  subnet_ids          = each.value == "Interface" ? module.hello_api_vpc_subnets.private_subnet_ids : null
+  security_group_ids  = each.value == "Interface" ? [aws_security_group.hello_api_vpc_interface_endpoint[each.key].id] : null
+  private_dns_enabled = each.value == "Interface" ? true : null
+
+  route_table_ids = each.value["type"] == "Gateway" ? module.hello_api_vpc_subnets.private_route_table_ids : null
 }
+
+
 
 # https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html#gateway-endpoint-security
 # https://docs.aws.amazon.com/vpc/latest/userguide/working-with-aws-managed-prefix-lists.html#available-aws-managed-prefix-lists
 
-data "aws_prefix_list" "hello_api_vpc_s3_gateway_endpoint" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_gateway_client" {
+  for_each = (
+    var.create_vpc_endpoints_and_load_balancer
+    ? local.endpoint_type_to_map["Gateway"]
+    : {}
+  )
 
-  prefix_list_id = aws_vpc_endpoint.hello_api_vpc_s3_gateway[0].prefix_list_id
-}
-
-resource "aws_vpc_security_group_egress_rule" "hello_api_vpc_endpoints_client_ecs_task_s3_gateway_endpoint" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
-
-  security_group_id = aws_security_group.hello_api_vpc_endpoints_client_ecs_task.id
+  security_group_id = (
+    aws_security_group.hello_api_vpc_endpoints_client[each.value["client"]].id
+  )
 
   ip_protocol    = "tcp"
   from_port      = local.tcp_ports["https"]
   to_port        = local.tcp_ports["https"]
-  prefix_list_id = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint[0].id
+  prefix_list_id = aws_vpc_endpoint.hello_api[each.value["service"]].prefix_list_id
 
-  tags = { Name = data.aws_prefix_list.hello_api_vpc_s3_gateway_endpoint[0].name }
+  tags = { Name = each.value["service"] }
 }
