@@ -2,10 +2,14 @@
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
-ARG AMAZON_LINUX_BASE_VERSION
-ARG AMAZON_LINUX_BASE_DIGEST
+# Defaults required:
+# https://docs.docker.com/reference/build-checks/invalid-default-arg-in-from
+ARG AMAZON_LINUX_BASE_VERSION='2023.8.20250818.0'
+ARG AMAZON_LINUX_BASE_DIGEST='sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55'
 FROM "amazonlinux:${AMAZON_LINUX_BASE_VERSION}@${AMAZON_LINUX_BASE_DIGEST}"
 
+ARG AMAZON_LINUX_BASE_VERSION
+ARG AMAZON_LINUX_BASE_DIGEST
 LABEL org.opencontainers.image.base.name="docker.io/library/amazonlinux:${AMAZON_LINUX_BASE_VERSION}"
 LABEL org.opencontainers.image.base.digest="${AMAZON_LINUX_BASE_DIGEST}"
 

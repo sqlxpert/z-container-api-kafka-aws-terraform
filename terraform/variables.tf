@@ -76,14 +76,14 @@ variable "create_nat_gateway" {
   default = false
 }
 
-variable "AMAZON_LINUX_BASE_VERSION" {
+variable "amazon_linux_base_version" {
   type        = string
   description = "The version of the Amazon Linux base image. See https://docs.aws.amazon.com/linux/al2023/ug/base-container.html , https://gallery.ecr.aws/amazonlinux/amazonlinux , and https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
   default = "2023.8.20250818.0"
 }
 
-variable "AMAZON_LINUX_BASE_DIGEST" {
+variable "amazon_linux_base_digest" {
   type        = string
   description = "The digest of the Amazon Linux base image. See https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
