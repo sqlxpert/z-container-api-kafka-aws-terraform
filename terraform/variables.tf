@@ -60,6 +60,13 @@ variable "enable_https" {
   default = true
 }
 
+variable "create_lambda_test_event_schema_registry" {
+  type        = bool
+  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. Change this to false to import the existing registry, if the \"lambda-testevent-schemas\" registry already exists. It will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
+
+  default = true
+}
+
 variable "create_nat_gateway" {
   type        = bool
   description = "Whether to create a NAT Gateway (expensive). Gateway and interface endpoints, defined to support ECS Fargate, make the NAT Gateway unnecessary."

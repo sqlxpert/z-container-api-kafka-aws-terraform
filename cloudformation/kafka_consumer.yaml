@@ -96,41 +96,6 @@ Parameters:
       https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html#compatibility-with-aws-services
     Default: ""
 
-  CreateLambdaTestEvents:
-    Type: String
-    Description: >-
-      Whether to create the shareable test event for the Kafka consumer AWS
-      Lambda function. The default, "false", does not create the event. Before
-      you change this value to "true", delete any independently-created
-      shareable test events for the function and see
-      CreateLambdaTestEventSchemaRegistry . See also
-      github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform
-    Default: "false"
-    AllowedValues:
-      - "false"
-      - "true"
-
-  CreateLambdaTestEventSchemaRegistry:
-    Type: String
-    Description: >-
-      Whether to create the EventBridge schema registry that houses shareable
-      test events for all Lambda functions.
-      There is never any need to change this value from "true" back to "false".
-      Keep the default value, "false", if CreateLambdaTestEvents will remain
-      "false", or if the "lambda-testevent-schemas" schema registry already
-      exists (which will be the case if a shareable test event has ever been
-      created for any Lambda function in the same AWS account and region as
-      this stack).
-      Change the value to "true" before changing CreateLambdaTestEvents to
-      "true", if the "lambda-testevent-schemas" schema registry does not yet
-      exist in the same AWS account and region as this stack. Next, change
-      CreateLambdaTestEvents to "true" in a separate stack update, to avoid a
-      timing error.
-    Default: "false"
-    AllowedValues:
-      - "false"
-      - "true"
-
   LambdaFnReservedConcurrentExecutions:
     Type: Number
     Description: >-
@@ -231,8 +196,6 @@ Metadata:
       - Label:
           default: AWS Lambda function to consume Kafka messages
         Parameters:
-          - CreateLambdaTestEvents
-          - CreateLambdaTestEventSchemaRegistry
           - LambdaFnReservedConcurrentExecutions
           - LambdaFnBatchSize
           - LambdaFnMemoryMB
@@ -266,10 +229,6 @@ Metadata:
         default: Maximum bytes in a message
       SqsKmsKey:
         default: KMS encryption key
-      CreateLambdaTestEvents:
-        default: Create shareable test events
-      CreateLambdaTestEventSchemaRegistry:
-        default: Create schema registry for shareable test events
       LambdaFnReservedConcurrentExecutions:
         default: Number of reserved parallel operations
       LambdaFnBatchSize:
@@ -333,11 +292,6 @@ Conditions:
 
   LambdaFnReservedConcurrentExecutionsOff:
     !Equals [ !Ref LambdaFnReservedConcurrentExecutions, -1 ]
-
-  CreateLambdaTestEventsTrue:
-    !Equals [ !Ref CreateLambdaTestEvents, "true" ]
-  CreateLambdaTestEventSchemaRegistryTrue:
-    !Equals [ !Ref CreateLambdaTestEventSchemaRegistry, "true" ]
 
   CloudWatchLogsKmsKeyBlank: !Equals [ !Ref CloudWatchLogsKmsKey, "" ]
 
@@ -545,21 +499,9 @@ Resources:
       MessageRetentionPeriod: !Ref ErrorQueueMessageRetentionPeriodSecs
 
   # https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events
-
-  LambdaTestEventSchemaRegistry:
-    Type: AWS::EventSchemas::Registry
-    Condition: CreateLambdaTestEventSchemaRegistryTrue
-    DeletionPolicy: Retain  # Shared by ALL Lambda functions!
-    UpdateReplacePolicy: Retain  # Avoids cfn-lint W3011 but will never apply
-    Properties:
-      RegistryName: "lambda-testevent-schemas"
-      Description: !Ref AWS::NoValue  # Conforms with Lambda-generated registry
-
-  LambdaTestEventSchema:
+  # https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events
+  LambdaFnTestEventSchema:
     Type: AWS::EventSchemas::Schema
-    Condition: CreateLambdaTestEventsTrue
-    # DependsOn: LambdaTestEventSchemaRegistry is not allowed
-    # because LambdaTestEventSchemaRegistry is created conditionally.
     Properties:
       RegistryName: "lambda-testevent-schemas"
       SchemaName: !Sub "_${LambdaFn}-schema"
