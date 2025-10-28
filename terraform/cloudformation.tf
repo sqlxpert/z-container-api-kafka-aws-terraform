@@ -10,13 +10,13 @@
 locals {
   lambda_testevent_schemas_registry_name = "lambda-testevent-schemas"
 
-  lambda_testevent_schemas_registry_names_set = toset([
+  schemas_registry_names_set = toset([
     local.lambda_testevent_schemas_registry_name
   ])
 }
 
 resource "aws_schemas_registry" "this" {
-  for_each = local.lambda_testevent_schemas_registry_names_set
+  for_each = local.schemas_registry_names_set
 
   region      = local.region
   name        = each.key
@@ -31,9 +31,9 @@ resource "aws_schemas_registry" "this" {
 
 import {
   for_each = (
-    var.create_lambda_test_event_schema_registry
+    var.create_lambda_testevent_schema_registry
     ? toset([])
-    : local.lambda_testevent_schemas_registry_names_set
+    : local.schemas_registry_names_set
   )
 
   region = local.region
