@@ -3,16 +3,15 @@
 Hello!
 
 This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
-consumer setup for AWS, provisioned with Terraform. I wrote it in
-September,&nbsp;2025, in response to a take-home technical exercise.
+consumer setup for AWS, provisioned with Terraform and CloudFormation. I wrote
+it in September,&nbsp;2025, in response to a take-home technical exercise.
 
 Have fun experimenting with it, see if you can re-use parts of it in your own
-projects, and feel free to send comments and questions.
+projects, and feel free to send comments and questions!
 
 Freed from the yoke of a specification written by an uninsightful,
-non-AWS-savvy employer, I'm going to add to this project as time permits.
-I decided not to write the Lambda consumer initially, since I've
-[demonstrated the Lambda consumer pattern in real-world software](#lambda-consumer-alternative).
+non-AWS-savvy employer, I've been enhancing this project's cost profile and
+network security, and demonstrating the latest Terraform features.
 
 Jump to:
 [Commentary](#commentary)
@@ -172,6 +171,8 @@ Jump to:
     image, then build the image.
 
     ```shell
+    AMAZON_LINUX_BASE_VERSION=$(terraform output -raw 'amazon_linux_base_version')
+    AMAZON_LINUX_BASE_DIGEST=$(terraform output -raw 'amazon_linux_base_digest')
     AWS_ECR_REGISTRY_REGION=$(terraform output -raw 'hello_api_aws_ecr_registry_region')
     AWS_ECR_REGISTRY_URI=$(terraform output -raw 'hello_api_aws_ecr_registry_uri')
     AWS_ECR_REPOSITORY_URL=$(terraform output -raw 'hello_api_aws_ecr_repository_url')
@@ -183,7 +184,7 @@ Jump to:
     ```
 
     ```shell
-    sudo docker buildx build --platform='linux/arm64' --tag "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}" --output 'type=docker' .
+    sudo docker buildx build --build-arg AMAZON_LINUX_BASE_VERSION="${AMAZON_LINUX_BASE_VERSION}" --build-arg AMAZON_LINUX_BASE_DIGEST="${AMAZON_LINUX_BASE_DIGEST}" --platform='linux/arm64' --tag "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}" --output 'type=docker' .
     ```
 
     ```shell
@@ -288,7 +289,7 @@ it is not intended for production use.
 Producing a working solution required significant free labor. To limit free
 labor, I:
 
-- **Omitted a local environment.** Local building and testing of Docker
+- **Use AWS CloudShell or EC2** Local building and testing of Docker
   containers meant to be deployed in the cloud, and local execution of
   `terraform apply` to create cloud resources, introduce variability and
   security risk without much benefit. Instead, I used the same Linux
@@ -305,22 +306,7 @@ labor, I:
   [github.com/sqlxpert/stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora#stay-stopped-rds-and-aurora)
   project.
 
-- <a name="lambda-consumer-alternative"></a>**Omitted the Kafka consumer Lambda
-  function.** My prior open-source work demonstrates event-driven Lambda
-  functions. For an example with SQS as the event source, see:
-
-  - [least-privilege Lambda execution IAM role](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L572-L741)
-  - [Lambda function setup](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L1728-L1767)
-  - [event consumer Python code, resource permissions, and event source mapping](https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L2470-L2538)
-
-  in
-  [github.com/sqlxpert/lights-off-aws](https://github.com/sqlxpert/lights-off-aws#lights-off)&nbsp;.
-
-  Re-implementing the same pattern with a new event source would not say much.
-  The intelligence lies in AWS's glue between MSK (or a different service) and
-  Lambda; a simple consumer sees only batches of JSON-formatted events.
-
-- **Omitted the architecture diagram.** Diagrams generated automatically from
+- **Omit the architecture diagram.** Diagrams generated automatically from
   infrastructure-as-code templates might look pretty but their explanatory
   power is weak. The level of detail always seems too high or too low for the
   audience. Schooled by Dr. Edward Tufte's

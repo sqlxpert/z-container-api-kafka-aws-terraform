@@ -18,9 +18,8 @@ locals {
 resource "aws_schemas_registry" "lambda_testevent" {
   for_each = local.schemas_registry_names_set
 
-  region      = local.aws_region_main
-  name        = each.key
-  description = null # Conforms with Lambda-generated registry
+  region = local.aws_region_main
+  name   = each.key
 
   lifecycle {
     prevent_destroy = true
@@ -28,6 +27,7 @@ resource "aws_schemas_registry" "lambda_testevent" {
     # https://developer.hashicorp.com/terraform/language/block/removed#lifecycle
 
     ignore_changes = [
+      description,
       tags,
       tags_all,
     ]

@@ -2,10 +2,12 @@
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
-FROM amazonlinux:2023.8.20250818.0@sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55
+ARG AMAZON_LINUX_BASE_VERSION
+ARG AMAZON_LINUX_BASE_DIGEST
+FROM "amazonlinux:${AMAZON_LINUX_BASE_VERSION}@${AMAZON_LINUX_BASE_DIGEST}"
 
-LABEL org.opencontainers.image.base.name="docker.io/library/amazonlinux:2023.8.20250818.0"
-LABEL org.opencontainers.image.base.digest="sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
+LABEL org.opencontainers.image.base.name="docker.io/library/amazonlinux:${AMAZON_LINUX_BASE_VERSION}"
+LABEL org.opencontainers.image.base.digest="${AMAZON_LINUX_BASE_DIGEST}"
 
 LABEL org.opencontainers.image.documentation="https://github.com/sqlxpert/z-container-api-kafka-aws-terraform"
 
@@ -25,14 +27,16 @@ RUN \
     --assumeyes \
     --setopt=install_weak_deps=False \
     --nodocs \
-    python3.12-3.12.11-2.amzn2023.0.2 \
-    shadow-utils-2:4.9-12.amzn2023.0.4 \
+    python3.12 \
+    shadow-utils \
   && useradd --shell /usr/bin/bash --home /hello_api --user-group --uid 1011 hello_api \
   && dnf remove \
     --assumeyes \
     --setopt=clean_requirements_on_remove=True \
     shadow-utils
 # shadow-utils provides useradd
+# Operating system package versions are omitted, thanks to
+# https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html
 
 USER hello_api
 WORKDIR /hello_api

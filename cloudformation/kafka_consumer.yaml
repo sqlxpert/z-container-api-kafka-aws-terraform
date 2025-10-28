@@ -611,7 +611,7 @@ Resources:
       TracingConfig: { Mode: PassThrough }
       Architectures:
         - arm64
-      Runtime: python3.13
+      Runtime: python3.12
       Handler: index.lambda_handler
       Code:
         ZipFile: |
