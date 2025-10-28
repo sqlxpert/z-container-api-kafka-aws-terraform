@@ -248,7 +248,8 @@ Jump to:
 
     ```shell
     cd ../terraform
-    # terraform apply -destroy
+    terraform state rm 'aws_schemas_registry.lambda_testevent'
+    terraform apply -destroy
     ```
 
     If any resource is slow to delete, you may wish to interrupt Terraform,

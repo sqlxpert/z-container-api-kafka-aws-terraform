@@ -23,10 +23,17 @@ resource "aws_schemas_registry" "lambda_testevent" {
 
   lifecycle {
     prevent_destroy = true
-    # Instead, add a removed block with lifecycle.destroy = false
+    # Retain this registry when destroying project-specific resources, because
+    # it holds test event schemas for ALL Lambda functions in an AWS account
+    # and region.
+    #
+    # terraform state rm 'aws_schemas_registry.lambda_testevent'
+    #
+    # or, add a removed block with lifecycle.destroy = false
     # https://developer.hashicorp.com/terraform/language/block/removed#lifecycle
 
     ignore_changes = [
+      # These properties should always be as defined by AWS (i.e., not set).
       description,
       tags,
       tags_all,
