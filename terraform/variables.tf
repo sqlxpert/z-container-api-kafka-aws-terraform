@@ -18,7 +18,7 @@ variable "hello_api_aws_ecr_image_tag" {
 
 variable "enable_kafka" {
   type        = bool
-  description = "Whether to create the MSK Serverless cluster. Set to false to significantly reduce costs; the API will write only to the CloudWatch log."
+  description = "Whether to create the MSK Serverless cluster. Set this to false to significantly reduce costs; the API will write only to the CloudWatch log. You must set this to false if create_vpc_endpoints_and_load_balancer is false ."
 
   default = false
 }
@@ -39,16 +39,18 @@ variable "hello_api_aws_ecs_service_desired_count_tasks" {
 
 variable "create_vpc_endpoints_and_load_balancer" {
   type        = bool
-  description = "Whether to create the virtual private cloud (VPC) interface and gateway endpoints and the application load balancer. These expensive resources are not needed until you have built and uploaded the hello_api image and are ready to start the API. You must set this to true if hello_api_aws_ecs_service_desired_count_tasks is greater than 0."
+  description = "Whether to create the virtual private cloud (VPC) interface and gateway endpoints and the application load balancer. These expensive resources are not needed until you have built and uploaded the hello_api image and are ready to start the API. You must set this to true if enable_kafka is true or hello_api_aws_ecs_service_desired_count_tasks is greater than 0."
 
   default = true
 
   validation {
-    error_message = "Before increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
+    error_message = "Before setting enable_kafka to true or increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
 
     condition = (
-      (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
-      || var.create_vpc_endpoints_and_load_balancer
+      (
+        (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
+        && !var.enable_kafka
+      ) || var.create_vpc_endpoints_and_load_balancer
     )
   }
 }

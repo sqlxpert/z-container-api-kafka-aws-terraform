@@ -18,7 +18,7 @@ locals {
 resource "aws_schemas_registry" "this" {
   for_each = local.schemas_registry_names_set
 
-  region      = local.region
+  region      = local.aws_region_main
   name        = each.key
   description = null # Conforms with Lambda-generated registry
 
@@ -36,8 +36,11 @@ import {
     : local.schemas_registry_names_set
   )
 
-  region = local.region
-  id     = each.key
+  id = join("@", [
+    each.key,
+    local.aws_region_main
+    # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/enhanced-region-support#how-region-works
+  ])
 
   to = aws_schemas_registry.this[each.key]
 }
@@ -50,10 +53,13 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
   name          = "HelloApiKafkaConsumer"
   template_body = file("${local.cloudformation_path}/kafka_consumer.yaml")
 
-  region = local.region
+  region = local.aws_region_main
 
   capabilities = ["CAPABILITY_IAM"]
 
+  depends_on = [
+    aws_schemas_registry.this,
+  ]
   parameters = {
     # Terraform won't automatically convert HCL list(string) to
     # CloudFormation List<String> !
