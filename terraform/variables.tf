@@ -64,7 +64,7 @@ variable "enable_https" {
 
 variable "create_lambda_testevent_schema_registry" {
   type        = bool
-  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. Change this to false to import the existing registry, if the \"lambda-testevent-schemas\" registry already exists. It will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
+  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name lambda-testevent-schemas already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
 
   default = true
 }
