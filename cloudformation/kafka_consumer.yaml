@@ -365,10 +365,12 @@ Resources:
           - Effect: Allow
             Principal: { Service: lambda.amazonaws.com }
             Action: sts:AssumeRole
+
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-        # - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/AWSLambdaVPCAccessExecutionRole"
+        # - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/service-role/AWSLambdaVPCAccessExecutionRole"
         # TODO: check!
+
       Policies:
 
         # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html#configuration-vpc-best-practice-security
@@ -402,15 +404,14 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action:
+                  - "kafka:DescribeClusterV2"
                   - "kafka-cluster:Connect"
                   - "kafka-cluster:DescribeCluster"
-                  - "kafka:DescribeClusterV2"
                 Resource: !Ref MskClusterArn
               - Effect: Allow
                 Action:
                   - "kafka-cluster:DescribeTopic"
                   - "kafka-cluster:ReadData"
-
                 # This aspect of CloudFormation is yucky!
                 #
                 # https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-resources-for-iam-policies
@@ -419,7 +420,6 @@ Resources:
                 # [0                                       0]:cluster/[1                         1]
                 # arn:${Partition}:kafka:${Region}:${Account}:topic../${ClusterName}/${ClusterUuid}/${TopicName}
                 # arn:${Partition}:kafka:${Region}:${Account}:group../${ClusterName}/${ClusterUuid}/${GroupName}
-
                 Resource: !Join
                   - ":"
                   -
@@ -430,7 +430,6 @@ Resources:
                           - topic
                           - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
                           - !Ref MskClusterTopic
-
               - Effect: Allow
                 Action:
                   - "kafka-cluster:DescribeGroup"
@@ -492,31 +491,32 @@ Resources:
               ArnEquals:
                 "aws:SourceArn":
                   - !Ref MskClusterArn
-          # TODO: Move to identity-based policy for Lambda execution role?
-          # - Sid:
-          #     Fn::If:
-          #       - SqsKmsKeyCustom
-          #       - SourceQueueNoteKeyPolicyNeedsSqsKmsEncrypt
-          #       - SourceQueue
-          #   Effect: Allow
-          #   Principal: "*"
-          #   Action: sqs:SendMessage
-          #   Resource: "*"
-          #   Condition:
-          #     ArnEquals:
-          #       "aws:SourceArn":
-          #         - !GetAtt MainQueue.Arn
+          - Sid:
+              Fn::If:
+                - SqsKmsKeyCustom
+                - SourceQueueNoteKeyPolicyNeedsSqsKmsEncrypt
+                - SourceQueue
+            Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "aws:SourceArn":
+                  - !Ref MskClusterArn
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-LambdaFn-*"
+                  # Avoids a circular dependency
           - Sid: ExclusiveSources
             Effect: Deny
             Principal: "*"
             Action: sqs:SendMessage
             Resource: "*"
             Condition:
-              ArnNotEquals:
+              ArnNotLike:
                 "aws:SourceArn":
                   - !Ref MskClusterArn
                   - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-LambdaFn-*"
-                  # Best I can do in CloudFormation, to avoid a circular dependency
+                  # Avoids a circular dependency
 
   ErrorQueue:
     Type: AWS::SQS::Queue

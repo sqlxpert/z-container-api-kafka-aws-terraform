@@ -78,9 +78,9 @@ data "aws_iam_policy_document" "kafka_write" {
   }
   statement {
     actions = [
+      "kafka:DescribeClusterV2",
       "kafka-cluster:Connect",
       "kafka-cluster:DescribeCluster",
-      "kafka:DescribeClusterV2",
     ]
     resources = [aws_msk_serverless_cluster.hello_api[0].arn]
   }

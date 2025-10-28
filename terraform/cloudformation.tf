@@ -13,10 +13,13 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
   capabilities = ["CAPABILITY_IAM"]
 
   parameters = {
-    LambdaFnSubnetIds        = module.hello_api_vpc_subnets.private_subnet_ids
-    LambdaFnSecurityGroupIds = [aws_security_group.hello["kafka_client"].id, ]
-    MskClusterArn            = aws_msk_serverless_cluster.hello_api[0].arn
-    MskClusterTopic          = var.kafka_topic
+    LambdaFnSubnetIds = module.hello_api_vpc_subnets.private_subnet_ids
+    LambdaFnSecurityGroupIds = [
+      aws_security_group.hello["lambda_function"].id,
+      aws_security_group.hello["kafka_client"].id,
+    ]
+    MskClusterArn   = aws_msk_serverless_cluster.hello_api[0].arn
+    MskClusterTopic = var.kafka_topic
 
     CreateLambdaTestEvents = true
 
