@@ -26,6 +26,7 @@ locals {
     "ecr.dkr" = 443
     "logs"    = 443
     "lambda"  = 443
+    "sqs"     = 443
     "sts"     = 443
   }
 
