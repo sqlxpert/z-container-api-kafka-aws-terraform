@@ -6,7 +6,7 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
   count = var.enable_kafka ? 1 : 0
 
   name          = "HelloApiKafkaConsumer"
-  template_body = file("${local.cloudformation_path}/lights_off_aws_prereq.yaml")
+  template_body = file("${local.cloudformation_path}/kafka_consumer.yaml")
 
   region = local.region
 
