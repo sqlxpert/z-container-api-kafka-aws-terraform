@@ -13,11 +13,20 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
   capabilities = ["CAPABILITY_IAM"]
 
   parameters = {
-    LambdaFnSubnetIds = module.hello_api_vpc_subnets.private_subnet_ids
-    LambdaFnSecurityGroupIds = [
-      aws_security_group.hello["lambda_function"].id,
-      aws_security_group.hello["kafka_client"].id,
-    ]
+    # Terraform won't automatically convert HCL list(string) to
+    # CloudFormation List<String> !
+    # Error: Inappropriate value for attribute "parameters": element
+    # "[...]": string required, but have list of string.
+    LambdaFnSubnetIds = join(",",
+      module.hello_api_vpc_subnets.private_subnet_ids
+    )
+    LambdaFnSecurityGroupIds = join(",",
+      [
+        aws_security_group.hello["lambda_function"].id,
+        aws_security_group.hello["kafka_client"].id,
+      ]
+    )
+
     MskClusterArn   = aws_msk_serverless_cluster.hello_api[0].arn
     MskClusterTopic = var.kafka_topic
 
