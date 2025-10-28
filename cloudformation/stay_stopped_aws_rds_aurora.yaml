@@ -1,0 +1,683 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: |-
+  Lambda consumer for Kafka (demo)
+  github.com/sqlxpert/z-container-api-kafka-aws-terraform
+  GPLv3, Copyright Paul Marcelin
+
+Parameters:
+
+  PlaceholderSuggestedStackName:
+    Type: String
+    Default: "KafkaConsumer"
+
+  PlaceholderHelp:
+    Type: String
+    Default: "github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform"
+
+  Enable:
+    Type: String
+    Description: >-
+      Whether to consume Kafka events
+    Default: "true"
+    AllowedValues:
+      - "false"
+      - "true"
+
+  LambdaFnSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >-
+      The ID(s) of the private subnet(s) for the AWS Lambda function. At least
+      one subnet is required. At east one subnet must have a routing table
+      entry that allows communication with the Kafka cluster specified in
+      MskClusterArn . All subnets must be in the same VPC as the security
+      group(s) specified in LambdaFnSecurityGroupIds .
+
+  LambdaFnSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: >-
+      The ID(s) of the security group(s) to which the AWS Lambda function will
+      be attached. At least one security group is required. At least one
+      security group must have an egress rule that allows sending requests to
+      the Kafka cluster specified in MskClusterArn . All security groups must
+      be in the same VPC as the subnet(s) specified in LambdaFnSubnetIds .
+
+  MskClusterArn:
+    Type: String
+    Description: >-
+      The ARN of the MSK Serverless Kafka cluster
+
+  MskClusterTopic:
+    Type: String
+    Description: >-
+      The Kafka topic from which to consume events
+
+  PlaceholderAdvancedParameters:
+    Type: String
+    Default: ""
+    AllowedValues:
+      - ""
+
+  ErrorQueueMessageRetentionPeriodSecs:
+    Type: Number
+    Description: >-
+      How many seconds to keep messages (in the error queue). This must be
+      greater than QueueMaxReceiveCount * QueueVisibilityTimeoutSecs . For
+      consistency, set this to LogRetentionInDays * 86400 or the next largest
+      value allowed by both CloudWatch Logs and SQS. The default, 1209600 , is
+      14 days. See MessageRetentionPeriod in
+      https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html#API_SetQueueAttributes_RequestParameters
+    Default: 1209600
+
+  QueueMessageBytesMax:
+    Type: Number
+    Description: >-
+      The maximum number of bytes in a forced database start event and an AWS
+      Lambda function trigger event. The default, 32768 bytes, is 32 KiB. See
+      MaximumMessageSize in
+      https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_CreateQueue.html#API_CreateQueue_RequestParameters
+    Default: 32768
+
+  SqsKmsKey:
+    Type: String
+    Description: >-
+      If this is blank, default non-KMS SQS encryption applies. To use the
+      AWS-managed key (which does not support key policy restrictions, or
+      cross-region or cross-account usage), specify "alias/aws/sqs". To use a
+      custom key, specify a partial ARN of the form "ACCOUNT:key/KEY_ID".
+      Whether the custom key is a single-region key, a multi-region key
+      primary, or a multi-region key replica, it must be in the same region
+      where you are creating this stack. Even if the custom key is in the same
+      AWS account as this stack, you must update the key policy to allow usage
+      by EventBridge and SQS. See
+      https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html#targets-permissions
+      and
+      https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html#compatibility-with-aws-services
+    Default: ""
+
+  CreateLambdaTestEvents:
+    Type: String
+    Description: >-
+      Whether to create the shareable test event for the Kafka consumer AWS
+      Lambda function. The default, "false", does not create the event. Before
+      you change this value to "true", delete any independently-created
+      shareable test events for the function and see
+      CreateLambdaTestEventSchemaRegistry . See also
+      github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
+
+  CreateLambdaTestEventSchemaRegistry:
+    Type: String
+    Description: >-
+      Whether to create the EventBridge schema registry that houses shareable
+      test events for all Lambda functions.
+      There is never any need to change this value from "true" back to "false".
+      Keep the default value, "false", if CreateLambdaTestEvents will remain
+      "false", or if the "lambda-testevent-schemas" schema registry already
+      exists (which will be the case if a shareable test event has ever been
+      created for any Lambda function in the same AWS account and region as
+      this stack).
+      Change the value to "true" before changing CreateLambdaTestEvents to
+      "true", if the "lambda-testevent-schemas" schema registry does not yet
+      exist in the same AWS account and region as this stack. Next, change
+      CreateLambdaTestEvents to "true" in a separate stack update, to avoid a
+      timing error.
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
+
+  LambdaFnReservedConcurrentExecutions:
+    Type: Number
+    Description: >-
+      How many batches of Kafka messages can definitely be processed in
+      parallel. To decline access to Lambda reserved concurrency, set this to
+      -1. See
+      https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html#configuration-concurrency-reserved
+    MinValue: -1
+    Default: -1
+
+  LambdaFnBatchSize:
+    Type: Number
+    Description: >-
+      How many Kafka messages to process in a single invokation. Batching is
+      not important for a sporadic and low-volume workload. If you change this,
+      consider QueueMessageBytesMax , LambdaFnMemoryMB and LambdaFnTimeoutSecs
+      .
+    MinValue: 1
+    Default: 2
+
+  LambdaFnMemoryMB:
+    Type: Number
+    Description: >-
+      How many megabytes of memory to allocate. Increase this only in case of
+      out-of-memory errors.
+    Default: 128
+
+  LambdaFnTimeoutSecs:
+    Type: Number
+    Description: >-
+      How many seconds before execution is canceled. Increase this only in
+      case of time-out errors.
+    Default: 30
+
+  LogRetentionInDays:
+    Type: Number
+    Description: >-
+      How many days to keep log entries. See retentionInDays in
+      https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutRetentionPolicy.html#API_PutRetentionPolicy_RequestParameters
+    Default: 3
+
+  LogLevel:
+    Type: String
+    Description: >-
+      The level of detail in the log. See
+      https://docs.python.org/3/library/logging.html#levels
+    Default: ERROR
+    AllowedValues:
+      - CRITICAL
+      - ERROR
+      - WARNING
+      - INFO
+      - DEBUG
+      - NOTSET
+
+  CloudWatchLogsKmsKey:
+    Type: String
+    Description: >-
+      If this is blank, default non-KMS CloudWatch Logs encryption applies. To
+      use a KMS key, which must be a custom key, specify a partial ARN, of
+      the form "ACCOUNT:key/KEY_ID".
+      Whether the custom key is a single-region key, a multi-region key
+      primary, or a multi-region key replica, it must be in the same region
+      where you are creating this stack. Even if the custom key is in the same
+      AWS account as this stack, you must update the key policy to allow usage
+      by CloudWatch Logs. See
+      https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html#cmk-permissions
+      .
+    Default: ""
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: For Reference
+        Parameters:
+          - PlaceholderSuggestedStackName
+          - PlaceholderHelp
+      - Label:
+          default: Essential
+        Parameters:
+          - Enable
+          - LambdaFnSubnetIds
+          - LambdaFnSecurityGroupIds
+          - MskClusterArn
+          - MskClusterTopic
+      - Label:
+          default: Advanced...
+        Parameters:
+          - PlaceholderAdvancedParameters
+      - Label:
+          default: SQS queues for errors
+        Parameters:
+          - ErrorQueueMessageRetentionPeriodSecs
+          - QueueMessageBytesMax
+          - SqsKmsKey
+      - Label:
+          default: AWS Lambda function to consume Kafka messages
+        Parameters:
+          - CreateLambdaTestEvents
+          - CreateLambdaTestEventSchemaRegistry
+          - LambdaFnReservedConcurrentExecutions
+          - LambdaFnBatchSize
+          - LambdaFnMemoryMB
+          - LambdaFnTimeoutSecs
+      - Label:
+          default: CloudWatch log for AWS Lambda function
+        Parameters:
+          - LogRetentionInDays
+          - LogLevel
+          - CloudWatchLogsKmsKey
+    ParameterLabels:
+      PlaceholderHelp:
+        default: For help with this stack, see
+      PlaceholderSuggestedStackName:
+        default: Suggested stack name
+      Enable:
+        default: Enable?
+      LambdaFnSubnetIds:
+        default: One or more subnet IDs
+      LambdaFnSecurityGroupIds:
+        default: One or more security group IDs
+      MskClusterArn:
+        default: MSK Serverless Kafka cluster ARN
+      MskClusterTopic:
+        default: Kafka topic
+      PlaceholderAdvancedParameters:
+        default: Do not change the parameters below, unless necessary!
+      ErrorQueueMessageRetentionPeriodSecs:
+        default: Seconds before deleting a message
+      QueueMessageBytesMax:
+        default: Maximum bytes in a message
+      SqsKmsKey:
+        default: KMS encryption key
+      CreateLambdaTestEvents:
+        default: Create shareable test events
+      CreateLambdaTestEventSchemaRegistry:
+        default: Create schema registry for shareable test events
+      LambdaFnReservedConcurrentExecutions:
+        default: Number of reserved parallel operations
+      LambdaFnBatchSize:
+        default: Batch size
+      LambdaFnMemoryMB:
+        default: Megabytes of memory
+      LambdaFnTimeoutSecs:
+        default: Seconds before timeout
+      LogRetentionInDays:
+        default: Days before deleting
+      LogLevel:
+        default: Level of detail
+      CloudWatchLogsKmsKey:
+        default: KMS encryption key
+
+Rules:
+
+  # Rules are a neat CloudFormation capability, whose EachMember quantifier I
+  # was not able to use previously in:
+  # https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/317e5e7/cloudformation/10-minute-aws-client-vpn.yaml#L290-L294
+
+  LambdaFnSubnetsInSameVpc:
+    Assertions:
+      - AssertDescription: >-
+          All
+          subnets specified in LambdaFnSubnetIds
+          must be in the same VPC
+        Assert:
+          "Fn::EachMemberEquals":
+            - !ValueOf [ LambdaFnSubnetIds, VpcId ]
+            - !ValueOf [ !Select [ 0, !Ref LambdaFnSubnetIds ], VpcId ]
+
+  LambdaFnSecurityGroupsInSameVpc:
+    Assertions:
+      - AssertDescription: >-
+          All
+          security groups specified in LambdaFnSecurityGroupIds
+          must be in the same VPC
+        Assert:
+          "Fn::EachMemberEquals":
+            - !ValueOf [ LambdaFnSecurityGroupIds, VpcId ]
+            - !ValueOf [ !Select [ 0, !Ref LambdaFnSecurityGroupIds ], VpcId ]
+
+  LambdaFnSubnetsAndLambdaFnSecurityGroupsInSameVpc:
+    Assertions:
+      - AssertDescription: >-
+          The Subnet(s) and the security group(s) specified in
+          LambdaFnSubnetIds and LambdaFnSecurityGroupIds
+          must be in the same VPC
+        Assert: !Equals
+          - !ValueOf [ !Select [ 0, !Ref LambdaFnSubnetIds ], VpcId ]
+          - !ValueOf [ !Select [ 0, !Ref LambdaFnSecurityGroupIds ], VpcId ]
+
+Conditions:
+
+  SqsKmsKeyBlank: !Equals [ !Ref SqsKmsKey, "" ]
+  SqsKmsKeyCustom:
+    Fn::And:
+      - !Not [ !Condition SqsKmsKeyBlank ]
+      - !Not [ !Equals [ !Ref SqsKmsKey, "alias/aws/sqs" ] ]
+
+  LambdaFnReservedConcurrentExecutionsOff:
+    !Equals [ !Ref LambdaFnReservedConcurrentExecutions, -1 ]
+
+  CreateLambdaTestEventsTrue:
+    !Equals [ !Ref CreateLambdaTestEvents, "true" ]
+  CreateLambdaTestEventSchemaRegistryTrue:
+    !Equals [ !Ref CreateLambdaTestEventSchemaRegistry, "true" ]
+
+  CloudWatchLogsKmsKeyBlank: !Equals [ !Ref CloudWatchLogsKmsKey, "" ]
+
+Resources:
+
+  LambdaFnLogGrp:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: !Ref LogRetentionInDays
+      KmsKeyId:
+        Fn::If:
+          - CloudWatchLogsKmsKeyBlank
+          - !Ref AWS::NoValue
+          - !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${CloudWatchLogsKmsKey}"
+
+  # Administrator: Restrict iam:PassRole to prevent use with arbitrary AWS
+  # Lambda functions.
+  LambdaFnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: !Sub "For ${AWS::Region} region"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+        # - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/AWSLambdaVPCAccessExecutionRole"
+        # TODO: check!
+      Policies:
+
+        # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html#configuration-vpc-best-practice-security
+        - PolicyName: VpcLambdaFunctionLeastPrivilege
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: LambdaServiceNotLambdaCodeNeedsEc2NetworkingPermissions
+                Effect: Deny
+                Action:
+                  - ec2:DescribeSubnets
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DetachNetworkInterface
+                  - ec2:DeleteNetworkInterface
+                  - ec2:AssignPrivateIpAddresses
+                  - ec2:UnassignPrivateIpAddresses
+                Resource: "*"
+                Condition:
+                  ArnLike:
+                    "lambda:SourceFunctionArn": "arn:aws:lambda:*:*:function:*"
+
+        # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-permissions.html#msk-basic-permissions
+        - PolicyName: KafkaRead
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kafka:GetBootstrapBrokers"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "kafka-cluster:Connect"
+                  - "kafka-cluster:DescribeCluster"
+                  - "kafka:DescribeClusterV2"
+                Resource: !Ref MskClusterArn
+              - Effect: Allow
+                Action:
+                  - "kafka-cluster:DescribeTopic"
+                  - "kafka-cluster:ReadData"
+
+                # This aspect of CloudFormation is yucky!
+                #
+                # https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-resources-for-iam-policies
+                #
+                # arn:${Partition}:kafka:${Region}:${Account}:cluster/${ClusterName}/${ClusterUuid}
+                # [0                                       0]:cluster/[1                         1]
+                # arn:${Partition}:kafka:${Region}:${Account}:topic../${ClusterName}/${ClusterUuid}/${TopicName}
+                # arn:${Partition}:kafka:${Region}:${Account}:group../${ClusterName}/${ClusterUuid}/${GroupName}
+
+                Resource: !Join
+                  - ":"
+                  -
+                    - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                    - Fn::Join
+                        - "/"
+                        -
+                          - topic
+                          - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                          - !Ref MskClusterTopic
+
+              - Effect: Allow
+                Action:
+                  - "kafka-cluster:DescribeGroup"
+                  - "kafka-cluster:AlterGroup"
+                Resource: !Join
+                  - ":"
+                  -
+                    - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                    - Fn::Join
+                        - "/"
+                        -
+                          - group
+                          - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                          - "*"
+
+        - Fn::If:
+            - SqsKmsKeyCustom
+            - PolicyName: SqsKmsDecryptNoteComplementsQueuePolicy
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html#receive-from-encrypted-queue
+                      - kms:Decrypt
+                    Resource: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${SqsKmsKey}"
+                    Condition:
+                      StringEquals: { "kms:ViaService": !Sub "sqs.${AWS::Region}.amazonaws.com" }
+            - !Ref AWS::NoValue
+
+  ErrorQueuePol:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [ !Ref ErrorQueue ]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: RequireTls
+            Effect: Deny
+            Principal: "*"
+            Action: sqs:*
+            Resource: "*"
+            Condition:
+              Bool: { aws:SecureTransport: "false" }
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:GetQueueAttributes
+            Resource: "*"
+          - Sid:
+              Fn::If:
+                - SqsKmsKeyCustom
+                - SourceEventRulesNoteKeyPolicyNeedsEventBridgeSqsKmsEncrypt
+                - SourceEventRules
+            Effect: Allow
+            Principal: { Service: kafka.amazonaws.com }
+            Action: sqs:SendMessage
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn":
+                  - !Ref MskClusterArn
+          # TODO: Move to identity-based policy for Lambda execution role?
+          # - Sid:
+          #     Fn::If:
+          #       - SqsKmsKeyCustom
+          #       - SourceQueueNoteKeyPolicyNeedsSqsKmsEncrypt
+          #       - SourceQueue
+          #   Effect: Allow
+          #   Principal: "*"
+          #   Action: sqs:SendMessage
+          #   Resource: "*"
+          #   Condition:
+          #     ArnEquals:
+          #       "aws:SourceArn":
+          #         - !GetAtt MainQueue.Arn
+          - Sid: ExclusiveSources
+            Effect: Deny
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource: "*"
+            Condition:
+              ArnNotEquals:
+                "aws:SourceArn":
+                  - !Ref MskClusterArn
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-LambdaFn-*"
+                  # Best I can do in CloudFormation, to avoid a circular dependency
+
+  ErrorQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: !If [ SqsKmsKeyBlank, true, false ]
+      KmsMasterKeyId:
+        Fn::If:
+          - SqsKmsKeyBlank
+          - !Ref AWS::NoValue
+          - Fn::If:
+              - SqsKmsKeyCustom
+              - !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${SqsKmsKey}"
+              - !Ref SqsKmsKey
+      KmsDataKeyReusePeriodSeconds:
+        !If [ SqsKmsKeyBlank, !Ref AWS::NoValue, 86400 ]  # seconds (24 hours)
+
+      MaximumMessageSize: !Ref QueueMessageBytesMax
+      ReceiveMessageWaitTimeSeconds: 20  # long polling (lowest cost)
+      DelaySeconds: 0
+
+      VisibilityTimeout: !Ref LambdaFnTimeoutSecs
+      # VisibilityTimeout property is in seconds. NB: cfn-lint warning
+      # W1030 Queue visibility timeout (X) is less than Function timeout (Y)
+      # seconds when 'Ref' is resolved
+
+      MessageRetentionPeriod: !Ref ErrorQueueMessageRetentionPeriodSecs
+
+  # https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events
+
+  LambdaTestEventSchemaRegistry:
+    Type: AWS::EventSchemas::Registry
+    Condition: CreateLambdaTestEventSchemaRegistryTrue
+    DeletionPolicy: Retain  # Shared by ALL Lambda functions!
+    UpdateReplacePolicy: Retain  # Avoids cfn-lint W3011 but will never apply
+    Properties:
+      RegistryName: "lambda-testevent-schemas"
+      Description: !Ref AWS::NoValue  # Conforms with Lambda-generated registry
+
+  LambdaTestEventSchema:
+    Type: AWS::EventSchemas::Schema
+    Condition: CreateLambdaTestEventsTrue
+    # DependsOn: LambdaTestEventSchemaRegistry is not allowed
+    # because LambdaTestEventSchemaRegistry is created conditionally.
+    Properties:
+      RegistryName: "lambda-testevent-schemas"
+      SchemaName: !Sub "_${LambdaFn}-schema"
+      Description: !Ref AWS::NoValue  # Conforms with Lambda-generated schema
+      Type: "OpenApi3"
+      Content: >
+        {
+          "openapi": "3.0.0",
+          "info": {
+            "version": "1.0.0",
+            "title": "Event"
+          },
+          "paths": {},
+          "components": {
+            "schemas": {
+              "Event": {
+                "type": "object",
+                "required": [
+                  "Records"
+                ],
+                "properties": {
+                  "Records": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EventItem"
+                    }
+                  }
+                }
+              },
+              "EventItem": {
+                "type": "object",
+                "required": [
+                  "messageId",
+                  "body"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string"
+                  },
+                  "messageId": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "examples": {
+              "RdsAndAurora_EditFirst": {
+                "value": {
+                  "Help1": "github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform",
+                  "Help2": "https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events",
+                  "Records": [
+                    {
+                      "body": "{ \"detail\": {}, \"detail-type\": \"Forthcoming\", \"version\": \"0\"}",
+                      "messageId": "test-message-1"
+                    }
+                  ]
+                },
+                "x-metadata": {}
+              }
+            }
+          }
+        }
+
+  # Administrator: Block other invocation mechanisms
+  LambdaFnInvokeLambdaPerm:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Principal: kafka.amazonaws.com
+      SourceArn: !Ref MskClusterArn
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaFn
+
+  MskClusterToLambdaFnMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    DependsOn: LambdaFnInvokeLambdaPerm
+    Properties:
+      EventSourceArn: !Ref MskClusterArn
+      Topics:
+        - !Ref MskClusterTopic
+      StartingPosition: LATEST
+      BatchSize: !Ref LambdaFnBatchSize
+      MaximumBatchingWindowInSeconds: 30
+      FunctionName: !GetAtt LambdaFn.Arn
+      DestinationConfig:
+        OnFailure:
+          Destination: !GetAtt ErrorQueue.Arn
+      Enabled: !Ref Enable
+
+  LambdaFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt LambdaFnRole.Arn
+      VpcConfig:
+        SubnetIds: !Ref LambdaFnSubnetIds
+        SecurityGroupIds: !Ref LambdaFnSecurityGroupIds
+        Ipv6AllowedForDualStack: false
+      ReservedConcurrentExecutions:
+        Fn::If:
+          - LambdaFnReservedConcurrentExecutionsOff
+          - !Ref AWS::NoValue
+          - !Ref LambdaFnReservedConcurrentExecutions
+      Timeout: !Ref LambdaFnTimeoutSecs
+      MemorySize: !Ref LambdaFnMemoryMB
+      LoggingConfig:
+        LogGroup: !Ref LambdaFnLogGrp
+        LogFormat: JSON
+        SystemLogLevel: WARN
+        ApplicationLogLevel: !Ref LogLevel
+      TracingConfig: { Mode: PassThrough }
+      Architectures:
+        - arm64
+      Runtime: python3.13
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |
+          #!/usr/bin/env python3
+
+          def lambda_handler(lambda_event, context):  # pylint: disable=unused-argument
+            """Write Kafka events to CloudWatch log
+            """
+            pass
