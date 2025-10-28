@@ -112,7 +112,6 @@ Parameters:
       How many Kafka messages to process in a single invokation. Batching is
       not important for a sporadic and low-volume workload. If you change this,
       consider QueueMessageBytesMax , LambdaFnMemoryMB and LambdaFnTimeoutSecs
-      .
     MinValue: 1
     Default: 2
 
@@ -163,7 +162,6 @@ Parameters:
       AWS account as this stack, you must update the key policy to allow usage
       by CloudWatch Logs. See
       https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html#cmk-permissions
-      .
     Default: ""
 
 Metadata:
