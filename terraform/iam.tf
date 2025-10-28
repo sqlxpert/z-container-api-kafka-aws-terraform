@@ -68,49 +68,43 @@ resource "aws_iam_role" "hello_api_ecs_task" {
 # https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
 
 data "aws_iam_policy_document" "kafka_write" {
+  count = var.enable_kafka ? 1 : 0
+
+  statement {
+    actions = [
+      "kafka:GetBootstrapBrokers",
+    ]
+    resources = ["*"]
+  }
   statement {
     actions = [
       "kafka-cluster:Connect",
-      "kafka-cluster:DescribeCluster"
+      "kafka-cluster:DescribeCluster",
+      "kafka:DescribeClusterV2",
     ]
-    resources = [
-      try(
-        aws_msk_serverless_cluster.hello_api[0].arn,
-        "*"
-      )
-    ]
+    resources = [aws_msk_serverless_cluster.hello_api[0].arn]
   }
   statement {
     actions = [
       "kafka-cluster:CreateTopic",
       "kafka-cluster:DescribeTopic",
       "kafka-cluster:WriteData",
-      "kafka-cluster:ReadData"
+      "kafka-cluster:ReadData",
     ]
-    resources = [
-      try(
-        join("/", [
-          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
-          var.kafka_topic
-        ]),
-        "*"
-      )
-    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
+      var.kafka_topic
+    ])]
   }
   statement {
     actions = [
+      "kafka-cluster:DescribeGroup",
       "kafka-cluster:AlterGroup",
-      "kafka-cluster:DescribeGroup"
     ]
-    resources = [
-      try(
-        join("/", [
-          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
-          "*"
-        ]),
-        "*"
-      )
-    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+      "*"
+    ])]
   }
 }
 resource "aws_iam_policy" "kafka_write" {
@@ -119,7 +113,7 @@ resource "aws_iam_policy" "kafka_write" {
   name        = "kafka_write"
   description = "MSK hello_api cluster: create, write to '{$var.kafka_topic}' topic"
 
-  policy = data.aws_iam_policy_document.kafka_write.json
+  policy = data.aws_iam_policy_document.kafka_write[0].json
 }
 resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
   count = var.enable_kafka ? 1 : 0

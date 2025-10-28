@@ -24,4 +24,6 @@ locals {
     "kafka"             = 9098
     "hello_api_private" = 8000
   }
+
+  cloudformation_path = "${path.module}/cloudformation"
 }
