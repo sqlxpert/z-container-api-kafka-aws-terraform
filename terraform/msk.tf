@@ -10,7 +10,10 @@ resource "aws_msk_serverless_cluster" "hello_api" {
   vpc_config {
     subnet_ids = module.hello_api_vpc_subnets.private_subnet_ids
     security_group_ids = [
-      aws_security_group.hello["kafka"].id
+      aws_security_group.hello["kafka"].id,
+
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-network-requirements
+      aws_security_group.hello["msk_lambda_function"].id,
     ]
   }
 

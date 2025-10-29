@@ -424,19 +424,27 @@ Resources:
                 #           - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
                 #           - "*"
 
+        # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-on-failure.html
+        - PolicyName: OnFailureTargetSqsQueue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt ErrorQueue.Arn
+        # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html#receive-from-encrypted-queue#send-to-encrypted-queue
         - Fn::If:
             - SqsKmsKeyCustom
-            - PolicyName: SqsKmsDecryptNoteComplementsQueuePolicy
+            - PolicyName: KmsForOnFailureTargetSqsQueue
               PolicyDocument:
                 Version: "2012-10-17"
                 Statement:
                   - Effect: Allow
                     Action:
-                      # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html#receive-from-encrypted-queue
+                      - kms:GenerateDataKey
                       - kms:Decrypt
                     Resource: !Sub "arn:${AWS::Partition}:kms:${AWS::Region}:${SqsKmsKey}"
-                    Condition:
-                      StringEquals: { "kms:ViaService": !Sub "sqs.${AWS::Region}.amazonaws.com" }
             - !Ref AWS::NoValue
 
   ErrorQueuePol:
@@ -457,41 +465,15 @@ Resources:
             Principal: "*"
             Action: sqs:GetQueueAttributes
             Resource: "*"
-          - Sid:
-              Fn::If:
-                - SqsKmsKeyCustom
-                - SourceEventRulesNoteKeyPolicyNeedsEventBridgeSqsKmsEncrypt
-                - SourceEventRules
-            Effect: Allow
-            Principal: { Service: kafka.amazonaws.com }
-            Action: sqs:SendMessage
-            Resource: "*"
-            Condition:
-              ArnEquals:
-                "aws:SourceArn":
-                  - !Ref MskClusterArn
-          - Sid:
-              Fn::If:
-                - SqsKmsKeyCustom
-                - SourceQueueNoteKeyPolicyNeedsSqsKmsEncrypt
-                - SourceQueue
-            Effect: Allow
-            Principal: "*"
-            Action: sqs:SendMessage
-            Resource: "*"
-            Condition:
-              ArnEquals:
-                aws:SourceArn: !Ref MskClusterArn
-                aws:PrincipalArn: !GetAtt LambdaFnRole.Arn
-          - Sid: ExclusiveSources
-            Effect: Deny
-            Principal: "*"
-            Action: sqs:SendMessage
-            Resource: "*"
-            Condition:
-              ArnNotEquals:
-                aws:SourceArn: !Ref MskClusterArn
-                aws:PrincipalArn: !GetAtt LambdaFnRole.Arn
+            # I removed the ExclusiveSource statement because the MSK Lambda
+            # event source mapping requires that sqs:SendMessage be allowed in
+            # in the Lambda function execution role's policies rather than in
+            # the queue policy, and mentioning the queue in one and the role in
+            # the other would create a circular dependency. For now, and unlike
+            # other SQS queues I've created (such as the "Do" operation queue
+            # in lights-off-aws), this queue isn't driving further processing,
+            # so messages from sources not blocked in the queue policy wouldn't
+            # pose a security risk.
 
   ErrorQueue:
     Type: AWS::SQS::Queue
@@ -606,12 +588,9 @@ Resources:
       BatchSize: !Ref LambdaFnBatchSize
       MaximumBatchingWindowInSeconds: 30
       FunctionName: !GetAtt LambdaFn.Arn
-      # TODO: Resolve trigger activation error; must sqs:SendMessage be in
-      # identity-based policy (on function role) rather than on resource-based
-      # policy (SQS queue policy)?
-      # DestinationConfig:
-      #   OnFailure:
-      #     Destination: !GetAtt ErrorQueue.Arn
+      DestinationConfig:
+        OnFailure:
+          Destination: !GetAtt ErrorQueue.Arn
       Enabled: !Ref Enable
 
   LambdaFn:
