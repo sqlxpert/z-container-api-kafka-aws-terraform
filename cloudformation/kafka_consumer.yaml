@@ -357,13 +357,17 @@ Resources:
               - Sid: LambdaServiceNotLambdaCodeNeedsEc2NetworkingPermissions
                 Effect: Deny
                 Action:
-                  - ec2:DescribeSubnets
                   - ec2:CreateNetworkInterface
                   - ec2:DescribeNetworkInterfaces
-                  - ec2:DetachNetworkInterface
+                  - ec2:DescribeSubnets
                   - ec2:DeleteNetworkInterface
                   - ec2:AssignPrivateIpAddresses
                   - ec2:UnassignPrivateIpAddresses
+                  # - ec2:DetachNetworkInterface
+                  # Removed as it has no effect. Deny appears here:
+                  # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html#configuration-vpc-best-practice-security
+                  # but no Allow appears here:
+                  # https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaVPCAccessExecutionRole.html#AWSLambdaVPCAccessExecutionRole-json
                 Resource: "*"
                 Condition:
                   ArnLike:
