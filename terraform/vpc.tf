@@ -179,7 +179,6 @@ locals {
     # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-endpoints.html#vpc-endpoint-create
     # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-vpc-privatelink
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-internetwork-traffic-privacy.html
-    { client = "lambda_function", service = "lambda" },
     { client = "lambda_function", service = "sqs" },
     { client = "lambda_function", service = "logs" },
   ]

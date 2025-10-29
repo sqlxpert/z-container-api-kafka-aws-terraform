@@ -58,6 +58,10 @@ resource "aws_ecs_cluster_capacity_providers" "hello_api" {
 resource "aws_ecs_task_definition" "hello_api" {
   family = "hello_api"
 
+  lifecycle {
+    create_before_destroy = true # When var.enable_kafka changes
+  }
+
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512  # "CPU units"; 512 CPU units = 0.5 vCPU

@@ -35,8 +35,8 @@ paths:
                   message:
                     type: string
                     nullable: false
-                    minLength: 12  # "Hello World!"
-                    maxLength: 12
+                    minLength: 13  # "Hello, World!"
+                    maxLength: 13
 
   /current_time:
     get:
@@ -51,9 +51,9 @@ paths:
             nullable: false
 
             # Secure:
-            minLength: 0
-            maxLength: 249  # See response ... message.maxLength
-            pattern: "^[-_a-zA-Z0-9]*$"  # Prevent injection
+            minLength: 1
+            maxLength: 247  # See response ... message.maxLength
+            pattern: "^[a-zA-Z][-_a-zA-Z0-9]*$"  # Prevent injection
 
       responses:
         "200":
@@ -75,7 +75,7 @@ paths:
                   message:
                     type: string
                     nullable: false
-                    minLength: 6  # "Hello "
+                    minLength: 8  # "Hello, !"
                     maxLength: 255
                     # See get.parameters.name[name] ... maxLength
 

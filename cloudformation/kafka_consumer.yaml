@@ -322,13 +322,11 @@ Resources:
 
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-        # - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-        # TODO: check!
 
       Policies:
 
         # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-permissions.html#msk-vpc-permissions
-        - PolicyName: PrivateMskClusterTrigger
+        - PolicyName: MskClusterTrigger
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -348,11 +346,14 @@ Resources:
                   ArnLike:
                     "lambda:SourceFunctionArn": "arn:aws:lambda:*:*:function:*"
 
-        # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html#configuration-vpc-best-practice-security
-        - PolicyName: VpcLambdaFunctionLeastPrivilege
+        # https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSLambdaVPCAccessExecutionRole.html#AWSLambdaVPCAccessExecutionRole-json
+        # For policy version: v3 (default) edited 2024-01-05
+        - PolicyName: LeastPrivilegeAwsManagedPolicyAWSLambdaVPCAccessExecutionRole
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
+
+              # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html#configuration-vpc-best-practice-security
               - Sid: LambdaServiceNotLambdaCodeNeedsEc2NetworkingPermissions
                 Effect: Deny
                 Action:
@@ -367,6 +368,31 @@ Resources:
                 Condition:
                   ArnLike:
                     "lambda:SourceFunctionArn": "arn:aws:lambda:*:*:function:*"
+
+              - Sid: CloudWatchLogsKnownLogGroupOnly
+                Effect: Deny
+                Action:
+                  - logs:CreateLogGroup
+                NotResource: !GetAtt LambdaFnLogGrp.Arn
+              - Sid: CloudWatchLogsLogStreamInKnownLogGroupOnly
+                Effect: Deny
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                # https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoncloudwatchlogs.html#amazoncloudwatchlogs-resources-for-iam-policies
+                # Warning: This compact way of transforming a log-group ARN to
+                # a log-stream ARN with !Split [ ":*", ... ] works only because
+                # log-group ARNs have no wildcards before the end. A wildcard
+                # for an ARN field such as region would lead to an invalid
+                # result.
+                NotResource: !Join
+                  - ":"
+                  -
+                    - !Select
+                      - 0
+                      - !Split [ ":*", !GetAtt LambdaFnLogGrp.Arn ]
+                    - "log-stream"
+                    - "*"
 
         # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-permissions.html#msk-basic-permissions
         - PolicyName: KafkaRead
@@ -387,42 +413,38 @@ Resources:
                 Action:
                   - "kafka-cluster:DescribeTopic"
                   - "kafka-cluster:ReadData"
-                Resource: "*"
-                # TODO: Fix inner substitution
-                # This aspect of CloudFormation is yucky!
-                #
-                # https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-resources-for-iam-policies
-                #
-                # arn:${Partition}:kafka:${Region}:${Account}:cluster/${ClusterName}/${ClusterUuid}
-                # [0                                       0]:cluster/[1                         1]
-                # arn:${Partition}:kafka:${Region}:${Account}:topic../${ClusterName}/${ClusterUuid}/${TopicName}
-                # arn:${Partition}:kafka:${Region}:${Account}:group../${ClusterName}/${ClusterUuid}/${GroupName}
-                # Resource: !Join
-                #   - ":"
-                #   -
-                #     - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
-                #     - Fn::Join
-                #         - "/"
-                #         -
-                #           - topic
-                #           - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
-                #           - !Ref MskClusterTopic
+                Resource:
+                  - !Join
+                    - ":"
+                    -
+                      - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                      - !Join
+                        - "/"
+                        -
+                          - topic
+                          - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                          - !Ref MskClusterTopic
+              # https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-resources-for-iam-policies
+              #
+              # arn:${Partition}:kafka:${Region}:${Account}:cluster/${ClusterName}/${ClusterUuid}
+              # [0                                       0]:cluster/[1                         1]
+              # arn:${Partition}:kafka:${Region}:${Account}:topic  /${ClusterName}/${ClusterUuid}/${TopicName}
+              # arn:${Partition}:kafka:${Region}:${Account}:group  /${ClusterName}/${ClusterUuid}/${GroupName}
               - Effect: Allow
                 Action:
                   - "kafka-cluster:DescribeGroup"
                   - "kafka-cluster:AlterGroup"
-                Resource: "*"
-                # TODO: Fix inner substitution
-                # Resource: !Join
-                #   - ":"
-                #   -
-                #     - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
-                #     - Fn::Join
-                #         - "/"
-                #         -
-                #           - group
-                #           - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
-                #           - "*"
+                Resource:
+                  - !Join
+                    - ":"
+                    -
+                      - !Select [ 0, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                      - !Join
+                        - "/"
+                        -
+                          - group
+                          - !Select [ 1, !Split [ ":cluster/", !Ref MskClusterArn ] ]
+                          - "*"
 
         # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-on-failure.html
         - PolicyName: OnFailureTargetSqsQueue
@@ -510,7 +532,7 @@ Resources:
       SchemaName: !Sub "_${LambdaFn}-schema"
       Description: !Ref AWS::NoValue  # Conforms with Lambda-generated schema
       Type: "OpenApi3"
-      Content: >
+      Content: !Sub >
         {
           "openapi": "3.0.0",
           "info": {
@@ -553,14 +575,33 @@ Resources:
             "examples": {
               "BasicTest": {
                 "value": {
-                  "Help1": "github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform",
-                  "Help2": "https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events",
-                  "Records": [
-                    {
-                      "body": "{ \"detail\": {}, \"detail-type\": \"Forthcoming\", \"version\": \"0\"}",
-                      "messageId": "test-message-1"
-                    }
-                  ]
+                  "Help1": "github.com/sqlxpert/z-container-api-kafka-aws-terraform",
+                  "Help2": "docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events",
+                  "eventSource": "aws:kafka",
+                  "eventSourceArn": "arn:aws:kafka:${AWS::Region}:${AWS::AccountId}:cluster/hello-api/c309bb1c-3d72-4533-a051-03de84fc83ce-s2",
+                  "bootstrapServers": "boot-4f1azvhr.c2.kafka-serverless.${AWS::Region}.amazonaws.com:9098",
+                  "records": {
+                    "events-0": [
+                      {
+                        "topic": "events",
+                        "partition": 0,
+                        "offset": 27,
+                        "timestamp": 1761768986384,
+                        "timestampType": "CREATE_TIME",
+                        "value": "eyJ0aW1lc3RhbXAiOiAxNzYxNzY4OTg2LCAibWVzc2FnZSI6ICJIZWxsbyBQYXVsIn0=",
+                        "headers": []
+                      },
+                      {
+                        "topic": "events",
+                        "partition": 0,
+                        "offset": 28,
+                        "timestamp": 1761768987499,
+                        "timestampType": "CREATE_TIME",
+                        "value": "eyJ0aW1lc3RhbXAiOiAxNzYxNzY4OTg3LCAibWVzc2FnZSI6ICJIZWxsbyBQYXVsIn0=",
+                        "headers": []
+                      }
+                    ]
+                  }
                 },
                 "x-metadata": {}
               }
@@ -621,8 +662,65 @@ Resources:
       Code:
         ZipFile: |
           #!/usr/bin/env python3
+          """Containerized REST API, Kafka, Lambda consumer, via Tf and CFn (demo)
+
+          github.com/sqlxpert/z-container-api-kafka-aws-terraform
+          GPLv3, Copyright Paul Marcelin
+          """
+
+          from logging import getLogger as logging_getLogger, INFO, WARNING, ERROR
+          from json import dumps as json_dumps, loads as json_loads
+          from base64 import b64decode as base64_b64decode
+
+          logger = logging_getLogger()
+          # Skip "credentials in environment" INFO message, unavoidable in AWS Lambda:
+          logging_getLogger("botocore").setLevel(WARNING)
+
+
+          def log(entry_type, entry_value, log_level):
+              """Emit a JSON-format log entry
+              """
+              entry_value_out = json_loads(json_dumps(entry_value, default=str))
+              # Avoids "Object of type datetime is not JSON serializable" in
+              # https://github.com/aws/aws-lambda-python-runtime-interface-client/blob/9efb462/awslambdaric/lambda_runtime_log_utils.py#L109-L135
+              #
+              # The JSON encoder in the AWS Lambda Python runtime isn't configured to
+              # serialize datatime values in responses returned by AWS's own Python SDK!
+              #
+              # Alternative considered:
+              # https://docs.powertools.aws.dev/lambda/python/latest/core/logger/
+
+              logger.log(
+                  log_level, "", extra={"type": entry_type, "value": entry_value_out}
+              )
+
 
           def lambda_handler(lambda_event, context):  # pylint: disable=unused-argument
-            """Write Kafka events to CloudWatch log
-            """
-            pass
+              """Log MSK messages
+              """
+              log("LAMBDA_EVENT", lambda_event, INFO)
+
+              # topic_partition (form: "topic-partition") is for future use
+              # pylint:disable=unused-variable
+              for topic_partition, records in lambda_event.get("records", []).items():
+                  # pylint:enable=unused-variable
+
+                  for record in records:
+
+                      result = None
+                      log_level = INFO
+
+                      try:
+                          result = json_loads(base64_b64decode(
+                              record.get("value", "")
+                          ).decode("utf-8"))
+                      except Exception as misc_exception:  # pylint: disable=broad-exception-caught
+                          result = misc_exception
+                          log_level = ERROR
+
+                      log("RECORD", record, log_level)
+                      log(
+                          "EXCEPTION" if isinstance(result, Exception) else "MESSAGE",
+                          result,
+                          log_level
+                      )

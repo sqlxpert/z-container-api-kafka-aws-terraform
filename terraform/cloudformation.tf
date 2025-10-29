@@ -26,12 +26,13 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
     LambdaFnSecurityGroupIds = join(",",
       [
         aws_security_group.hello["lambda_function"].id,
-        aws_security_group.hello["kafka_client"].id,
       ]
     )
 
     MskClusterArn   = aws_msk_serverless_cluster.hello_api[0].arn
     MskClusterTopic = var.kafka_topic
+
+    LogLevel = "INFO"
 
     # I am not initially supporting KMS encryption for this VPC Lambda
     # function housed in private subnets, due to the cost of interface

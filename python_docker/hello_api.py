@@ -174,7 +174,7 @@ def hello_get():
     """
     return (
         {
-            "message": "Hello World!",
+            "message": "Hello, World!",
         },
         200,
     )
@@ -185,7 +185,7 @@ def current_time_get(name):
     """
     message = {
         "timestamp": int(time_time()),  # Truncate fractional second
-        "message": f"Hello {name}",
+        "message": f"Hello, {name}!",
     }
     if ENABLE_KAFKA:
 
