@@ -338,7 +338,7 @@ This is a comprehensive, working solution. I made some executive decisions:
   offer a great way to bundle test events in IaC templates. Users can trigger
   realistic tests in a development AWS account, using either the AWS Console or
   the AWS&nbsp;CLI. See the
-  [Lambda test event source](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/main/cloudformation/kafka_consumer.yaml#L567-L598).
+  [Lambda test event source](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/d98c1cc/cloudformation/kafka_consumer.yaml#L567-L598).
 
 - **CloudFormation for Kafka Consumer**
   I defined Kafka consumer in CloudFormation, called from Terraform, because I
