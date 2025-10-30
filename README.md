@@ -4,7 +4,8 @@ Hello!
 
 This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
 consumer setup for AWS, provisioned with Terraform and CloudFormation. I wrote
-it in September,&nbsp;2025, in response to a take-home technical exercise.
+it in September,&nbsp;2025, in response to a take-home technical exercise
+(hence the `z-` prefix).
 
 Freed from the yoke of an uninsightful specification written by a non-AWS-savvy
 organization, I enhanced the project's cost profile and network security in
