@@ -1,4 +1,4 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
@@ -42,5 +42,10 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
     # https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-create-vpc.html#create-vpc-endpoints
     SqsKmsKey            = null
     CloudWatchLogsKmsKey = null
+  }
+
+  tags = {
+    cloudformation = "1"
+    source         = "github.com/sqlxpert/z-container-api-kafka-aws-terraform/tree/main/terraform/cloudformation.tf"
   }
 }

@@ -1,9 +1,19 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
+data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 locals {
+  caller_arn_parts = provider::aws::arn_parse(
+    data.aws_caller_identity.current.arn
+  )
+  # Provider functions added in Terraform v1.8.0
+  # arn_parse added in Terraform AWS provider v5.40.0
+
+  aws_partition  = local.caller_arn_parts["partition"]
+  aws_account_id = local.caller_arn_parts["account_id"]
+
   aws_region_main = coalesce(
     var.aws_region_main,
     data.aws_region.current.region

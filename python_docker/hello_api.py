@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+"""Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 
 github.com/sqlxpert/z-container-api-kafka-aws-terraform
 GPLv3, Copyright Paul Marcelin
@@ -147,7 +147,7 @@ def kafka_producer_get():
                 default=str
             ).encode("utf-8"),
 
-            # Send more or less immediately, for this demonstration
+            # Send more or less immediately (adjust for larger volume of data)
             batch_size=0,
             request_timeout_ms=500,
             linger_ms=0,

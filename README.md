@@ -121,6 +121,7 @@ Jump to:
     cd ~
     git clone 'https://github.com/sqlxpert/z-container-api-kafka-aws-terraform.git'
     cd z-container-api-kafka-aws-terraform/terraform
+
     ```
 
  5. In CloudShell only, configure the Terraform S3 backend.

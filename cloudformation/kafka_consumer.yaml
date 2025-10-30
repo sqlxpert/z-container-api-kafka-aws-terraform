@@ -2,7 +2,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description: |-
-  Lambda consumer for Kafka (demo)
+  Lambda consumer for Kafka (AWS MSK)
   github.com/sqlxpert/z-container-api-kafka-aws-terraform
   GPLv3, Copyright Paul Marcelin
 
@@ -242,45 +242,32 @@ Metadata:
       CloudWatchLogsKmsKey:
         default: KMS encryption key
 
-# TODO: Resolve ValueOf problem
 # Rules:
 
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/rules-section-structure.html#template-cross-parameter-rules-example
-  # Rules are a neat CloudFormation capability, whose EachMember quantifier I
-  # was not able to use previously in:
-  # https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/317e5e7/cloudformation/10-minute-aws-client-vpn.yaml#L290-L294
-
-  # LambdaFnSubnetsInSameVpc:
-  #   Assertions:
-  #     - AssertDescription: >-
-  #         All
-  #         subnets specified in LambdaFnSubnetIds
-  #         must be in the same VPC
-  #       Assert:
-  #         "Fn::EachMemberEquals":
-  #           - !ValueOf [ LambdaFnSubnetIds, VpcId ]
-  #           - !ValueOf [ !Select [ 0, !Ref LambdaFnSubnetIds ], VpcId ]
-
-  # LambdaFnSecurityGroupsInSameVpc:
-  #   Assertions:
-  #     - AssertDescription: >-
-  #         All
-  #         security groups specified in LambdaFnSecurityGroupIds
-  #         must be in the same VPC
-  #       Assert:
-  #         "Fn::EachMemberEquals":
-  #           - !ValueOf [ LambdaFnSecurityGroupIds, VpcId ]
-  #           - !ValueOf [ !Select [ 0, !Ref LambdaFnSecurityGroupIds ], VpcId ]
-
-  # LambdaFnSubnetsAndLambdaFnSecurityGroupsInSameVpc:
-  #   Assertions:
-  #     - AssertDescription: >-
-  #         The Subnet(s) and the security group(s) specified in
-  #         LambdaFnSubnetIds and LambdaFnSecurityGroupIds
-  #         must be in the same VPC
-  #       Assert: !Equals
-  #         - !ValueOf [ !Select [ 0, !Ref LambdaFnSubnetIds ], VpcId ]
-  #         - !ValueOf [ !Select [ 0, !Ref LambdaFnSecurityGroupIds ], VpcId ]
+# Rules are a neat CloudFormation capability, whose EachMember quantifier I
+# was not able to use previously in:
+# https://github.com/sqlxpert/10-minute-aws-client-vpn/blob/317e5e7/cloudformation/10-minute-aws-client-vpn.yaml#L290-L294
+#
+# EachMember example:
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/rules-section-structure.html#rules-section-example-syntax.yaml
+#
+# Unfortunately, EachMember can't be used here either, because of this
+# limitation: "ValidationError: Template format error: Following functions
+# are not supported in the Rules block of the template: [Fn::Select]"
+#
+# I would have liked to test that all subnets (and also all security groups)
+# are in the same VPC without adding an otherwise unused VpcId parameter.
+#
+# LambdaFnSubnetsInSameVpc:
+#   Assertions:
+#     - AssertDescription: >-
+#         All
+#         subnets specified in LambdaFnSubnetIds
+#         must be in the same VPC
+#       Assert:
+#         "Fn::EachMemberEquals":
+#           - !ValueOf [ LambdaFnSubnetIds, VpcId ]
+#           - !Select [ 0, !ValueOf [ !Ref LambdaFnSubnetIds, VpcId ] ]
 
 Conditions:
 
@@ -666,7 +653,7 @@ Resources:
       Code:
         ZipFile: |
           #!/usr/bin/env python3
-          """Containerized REST API, Kafka, Lambda consumer, via Tf and CFn (demo)
+          """Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 
           github.com/sqlxpert/z-container-api-kafka-aws-terraform
           GPLv3, Copyright Paul Marcelin

@@ -1,4 +1,4 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
@@ -51,7 +51,7 @@ resource "aws_ecs_cluster_capacity_providers" "hello_api" {
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight            = 0 # All spot, for a low-cost demonstration!
+    weight            = 0 # All spot (adjust for always-on certainty)
   }
 }
 
