@@ -79,7 +79,8 @@ Jump to:
         instance profile &rarr; Create new IAM profile) or afterward, give
         your EC2 instance a custom role. The role's policies must be sufficient
         for Terraform to list/describe, get tags for, create, tag, untag,
-        update, and delete all the AWS resource types included in the solution.
+        update, and delete all the AWS resource types included in this
+        project's `.tf` files.
 
       - Update packages (thanks to AWS's
         [deterministic upgrade philosophy](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html), there shouldn't be any updates if
@@ -227,13 +228,19 @@ Jump to:
       completed Step&nbsp;7.
 
  9. In the Amazon Elastic Container Service section of the AWS Console, check
-    the `hello_api` cluster. Eventually, you should see that 3 tasks are
+    the `hello_api` cluster. Eventually, you should see that 2&nbsp;tasks are
     running.
 
     - It will take a few minutes for ECS to notice, and then deploy, the
       container image. Relax, and let it happen. If you are impatient, or if
       there is a problem, you can navigate to the `hello_api` service, open the
       orange "Update service" pop-up menu, and select "Force new deployment".
+
+    - You can reduce the `hello_api_aws_ecs_service_desired_count_tasks`
+      variable in Terraform, to a minimum of 0&nbsp;tasks (to eliminate ECS
+      Fargate compute costs while you are experimenting). To demonstrate
+      redundancy in 3&nbsp;availability zones, increase the value to
+      3&nbsp;tasks or more.
 
 10. Generate the URLs and then test your API.
 
@@ -243,7 +250,7 @@ Jump to:
 
     Try the different URLs using your Web browser or
     `curl --location --insecure`
-    (the options allow redirect and self-signed TLS certificates).
+    (the options allow redirection and self-signed TLS certificates).
 
     |URL|Result Expected|
     |:---|:---|
@@ -257,8 +264,9 @@ Jump to:
     Terraform output.
 
     Your Web browser should redirect you from `http:` to `https:` and (let's
-    hope!) warn you about the untrusted, self-signed TLS certificate used for
-    this demonstration. Proceed to view the responses from your new API...
+    hope!) warn you about the untrusted, self-signed TLS certificate used in
+    this system (which of course is not tied to a known domain name). Proceed
+    to view the responses from your new API...
 
     If your Web browser configuration does not allow accessing Web sites with
     untrusted certificates, change the `enable_https` Terraform variable,
@@ -283,8 +291,11 @@ Jump to:
     from Kafka by the AWS MSK event source mapping, which in turn triggered the
     consumer Lambda function. It decodes the messages from Kafka and logs them.
 
-13. Delete the infrastructure as soon as you are done experimenting. I selected
-    low-cost options but they are not free.
+13. Set the `enable_kafka`&nbsp;,
+    `create_vpc_endpoints_and_load_balancer`&nbsp;, and
+    `hello_api_aws_ecs_service_desired_count_tasks` variables to their
+    cost-saving values if you'd like to continue experimenting. When you are
+    done, delete all resources; even the minimum configuration carries a cost.
 
     ```shell
     cd ../terraform
@@ -292,11 +303,17 @@ Jump to:
     terraform apply -destroy
     ```
 
-    If any resource is slow to delete, you may wish to interrupt Terraform,
-    delete the resource manually, and then re-run Terraform.
+    Deleting the VPC Lambda function can take a long time; expect
+    30&nbsp;minutes.
 
-    Expect an error message about retiring KMS encryption key grants (harmless,
-    in this case).
+    Expect an error message about retiring KMS encryption key grants
+    (harmless, in this case).
+
+    If you must interrupt and resume the `terraform apply -destroy` process, a
+    bug in CloudPosse's `aws_vpc` module can produce a "value depends on
+    resource attributes that cannot be determined until apply" error. Setting
+    `count = 0` in the cached module file indicated, on the line indicated, is
+    an emergency work-around.
 
 > Make fun of me all you want, but I write long option names (as in the
 instructions above) so that other people don't have to look up unfamiliar
@@ -324,35 +341,43 @@ large language model code generation. Code from other sources is acknowledged.
 
 ### Design Decisions
 
-This is a comprehensive, working solution. I made some executive decisions:
+This is a comprehensive, working system. I made some executive decisions:
 
-- **AWS CloudShell or EC2** Local building and testing of Docker containers
-  meant to be deployed in the cloud, and local execution of `terraform apply`
-  to create cloud resources, introduce variability and security risk without
-  much benefit. Instead, I use the same Linux distribution (Amazon Linux 2023)
-  that I selected for my Docker image, either on an EC2 instance or in
+- **AWS CloudShell or EC2**
+  Local building and testing of Docker containers meant to be deployed in the
+  cloud, and local execution of `terraform apply`  to create cloud resources,
+  introduce variability and security risk without much benefit. Instead, I use
+  the same Linux distribution (Amazon Linux 2023) that I selected for my
+  container image, either on an EC2 instance or in
   [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html).
 
 - **Lambda Test Event**
   [Shareable Lambda function test events](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
-  offer a great way to bundle test events in IaC templates. Users can trigger
-  realistic tests in a development AWS account, using either the AWS Console or
-  the AWS&nbsp;CLI. See the
+  offer a great way to bundle test events in infrastructure-as-code templates.
+  Users can trigger realistic tests in a development AWS account, using the AWS
+  Console, the AWS&nbsp;CLI, or a test program. See the
   [Lambda test event source](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/d98c1cc/cloudformation/kafka_consumer.yaml#L567-L598).
 
-- **CloudFormation for Kafka Consumer**
-  I defined Kafka consumer in CloudFormation, called from Terraform, because I
-  had several complete templates for Lambda functions and their dependencies,
-  from my other projects. I speak both Terraform and CloudFormation, and each
-  has its advantages. Here, re-using CloudFormation code saved time. It also
-  happens to establish a clean separation between the Kafka producer and the
-  consumer.
+- **CloudFormation for the Kafka Consumer**
+  I defined the Kafka consumer in CloudFormation, called from Terraform,
+  because I had complete and thoroughly-tested CloudFormation templates for
+  Lambda functions and their dependencies from my other projects. I speak both
+  Terraform and CloudFormation, and each approach to infrastructure-as-code has
+  its advantages. Here, re-using CloudFormation code saved me time. It also
+  happened to establish a clean separation between the Kafka producer and the
+  consumer. The consumer only needs the MSK cluster ARN, the topic name, the
+  subnet IDs for the cluster's private subnets, and the ID of a security group
+  for the VPC Lambda function.
 
-- **PrivateLink, not NAT Gateway**
+- **PrivateLink**
   NAT Gateway is a very expensive AWS service, and from a network security
   perspective, it's better to keep as much network traffic private as possible.
-  Accordingly, I define VPC endpoints for all necessary services, and leave the
-  NAT Gateway disabled by default.
+  Accordingly, I define VPC endpoints for all necessary AWS services and leave
+  the NAT Gateway off be default. I go a bit beyond AWS's recommendations for
+  the endpoint security groups, using strict reciprocal pairs to determine
+  which resources can access which AWS service endpoints, instead of opening
+  them to entire subnets, let alone to the entire VPC. I don't use endpoint
+  IAM policies, but could add them for even finer-grained control.
 
 ### Recommendations
 
