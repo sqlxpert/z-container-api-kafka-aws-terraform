@@ -322,44 +322,37 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 This is my own work, produced _without_ the use of artificial intelligence /
 large language model code generation. Code from other sources is acknowledged.
 
-### Limitations
+### Design Decisions
 
-This is a comprehensive, working solution, though as a demonstration project,
-it is not intended for production use.
+This is a comprehensive, working solution. I made some executive decisions:
 
-Producing a working solution required significant free labor. To limit free
-labor, I:
-
-- **Use AWS CloudShell or EC2** Local building and testing of Docker
-  containers meant to be deployed in the cloud, and local execution of
-  `terraform apply` to create cloud resources, introduce variability and
-  security risk without much benefit. Instead, I used the same Linux
-  distribution (Amazon Linux 2023) that I'd selected for my Docker image,
-  either on an EC2 instance or in
+- **AWS CloudShell or EC2** Local building and testing of Docker containers
+  meant to be deployed in the cloud, and local execution of `terraform apply`
+  to create cloud resources, introduce variability and security risk without
+  much benefit. Instead, I use the same Linux distribution (Amazon Linux 2023)
+  that I selected for my Docker image, either on an EC2 instance or in
   [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html).
 
+- **Lambda Test Event**
   [Shareable Lambda function test events](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
   offer a great way to bundle test events in IaC templates. Users can trigger
   realistic tests in a development AWS account, using either the AWS Console or
   the AWS&nbsp;CLI. See the
-  [Lambda test event](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/b9c2457/stay_stopped_aws_rds_aurora.yaml#L885-L970)
-  that I have added to the CloudFormation template for my existing
-  [github.com/sqlxpert/stay-stopped-aws-rds-aurora](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora#stay-stopped-rds-and-aurora)
-  project.
+  [Lambda test event source](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/main/cloudformation/kafka_consumer.yaml#L567-L598).
 
-- **Omit the architecture diagram.** Diagrams generated automatically from
-  infrastructure-as-code templates might look pretty but their explanatory
-  power is weak. The level of detail always seems too high or too low for the
-  audience. Schooled by Dr. Edward Tufte's
-  [_The Visual Display of Quantitative Information_](https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information),
-  I have produced compact, attractive, information-rich diagrams for my
-  pre-existing open-source projects. They address multiple audiences and were
-  easy to draw using Apple's free "Freeform" application. Click for examples:
-  <br/>
-  <br/>
-  [<img src="https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow-thumb.png" alt="An Event Bridge Scheduler rule triggers the 'Find' Amazon Web Services Lambda function every 10 minutes. The function calls 'describe' methods, checks the resource records returned for tag keys such as 'sched-start', and uses regular expressions to check the tag values for day, hour, and minute terms. Current day and time elements are inserted into the regular expressions using 'strftime'. If there is a match, the function sends a message to a Simple Queue Service queue. The 'Do' function, triggered in response, checks whether the message has expired. If not, this function calls the method indicated by the message attributes, passing the message body for the parameters. If the request is successful or a known exception occurs and it is not okay to re-try, the function is done. If an unknown exception occurs, the message remains in the operation queue, becoming visibile again after 90 seconds. After 3 tries, a message goes from the operation queue to the error (dead letter) queue." height="144" />](https://github.com/sqlxpert/lights-off-aws/blob/60cdb5b/media/lights-off-aws-architecture-and-flow.png?raw=true "Architecture diagram and flowchart for Lights Off, AWS!")
-  [<img src="https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-flow-simple.png" alt="After waiting 9 minutes, call to stop the Relational Database Service or Aurora database. Case 1: If the stop request succeeds, retry. Case 2: If the Aurora cluster is in an invalid state, parse the error message to get the status. Case 3: If the RDS instance is in an invalid state, get the status by calling to describe the RDS instance. Exit if the database status from Case 2 or 3 is 'stopped' or another final status. Otherwise, retry every 9 minutes, for 24 hours." height="144" />](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-flow-simple.png?raw=true "Simplified flowchart for [Step-]Stay Stopped, RDS and Aurora!")
-  [<img src="https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-architecture-and-flow-thumb.png" alt="Relational Database Service Event Bridge events '0153' and '0154' (database started after exceeding 7-day maximum stop time) go to the main Simple Queue Service queue, where messages are initially delayed 9 minutes. The Amazon Web Services Lambda function stops the RDS instance or the Aurora cluster. If the database's status is invalid, the queue message becomes visible again in 9 minutes. A final status of 'stopping', 'deleting' or 'deleted' ends retries, as does an error status. After 160 tries (24 hours), the message goes to the error (dead letter) SQS queue." height="144" />](https://github.com/sqlxpert/stay-stopped-aws-rds-aurora/blob/138a1b8/media/stay-stopped-aws-rds-aurora-architecture-and-flow.png?raw=true "Architecture diagram and flowchart for Stay Stopped, RDS and Aurora!")
+- **CloudFormation for Kafka Consumer**
+  I defined Kafka consumer in CloudFormation, called from Terraform, because I
+  had several complete templates for Lambda functions and their dependencies,
+  from my other projects. I speak both Terraform and CloudFormation, and each
+  has its advantages. Here, re-using CloudFormation code saved time. It also
+  happens to establish a clean separation between the Kafka producer and the
+  consumer.
+
+- **PrivateLink, not NAT Gateway**
+  NAT Gateway is a very expensive AWS service, and from a network security
+  perspective, it's better to keep as much network traffic private as possible.
+  Accordingly, I define VPC endpoints for all necessary services, and leave the
+  NAT Gateway disabled by default.
 
 ### Recommendations
 
@@ -387,7 +380,7 @@ most startups.)
 |Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ variant places the focus on usage rather than on cluster specification and operation. Still, everything requires extra effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, as application data, or as both? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous. Should we depend on a module published and maintained by one person, and how do we assure its security, today and in the future? Should Terraform have permission to authenticate to Kafka and manipulate data?<br/><br/>The [MSK authentication source code provided by AWS](https://github.com/aws/aws-msk-iam-sasl-signer-python/issues) has 11 active issues, some open for more than one year. The `kafka-python` [`KafkaProducer.send`](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaProducer.html#kafka.KafkaProducer.send) documentation mentions the return type but does not describe the contents; you have to [read the `kafka-python` source code](https://github.com/dpkp/kafka-python/blob/9227674/kafka/producer/future.py#L31-L74) yourself for that. The software has inconsistencies, such as using milliseconds for `KafkaProducer(request_timeout_ms)` but seconds for `KafkaProducer.send().get(timeout)`&nbsp;. Kafka and its software ecosystem is a rabbit warren of unnecessary complexity. A startup would be fine with SQS, or Kinesis for very high data volumes and/or for replayable streams, unless Kafka compatibility were part of the core business.|
 |Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
 |Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
-|Infrastructure as code (for _AWS_ resources)|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the relative difficulty of bootstrapping Terraform. I could have furnished a turn-key CloudFormation template, but before you can use Terraform you must, at the very least, provision an IAM role manually. In the short time that this project was under development, I had to code my own VPC endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-module is incompatible with the current Terraform AWS provider, and I couldn't downgrade _that_ and break everything else. I also documented a case where I couldn't use a basic AWS IPAM feature: [resource planning pools are not supported by the Terraform AWS provider](https://github.com/hashicorp/terraform-provider-aws/issues/34615).<br/><br/>On a daily basis, and at scale, these problems accumulate; the effort wasted diminishes the benefits that people ascribed to Terraform. (My advice is specifically for managing _AWS_ resources. Use whatever IaC tool you like for non-AWS stuff, prioritizing the many, close relationships between components created with the AWS API, over the few, weak dependencies between AWS- and non-AWS components.)|
+|Infrastructure as code (for _AWS_ resources)|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the relative difficulty of bootstrapping Terraform. I could have furnished a turn-key CloudFormation template, but before you can use Terraform you have to have environment in which to run it, you have to install it, and you have to set up a backend to store Terraform state. In the short time that this project was under development, I had to code my own VPC endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-module is incompatible with the current Terraform AWS provider, and I couldn't downgrade _that_ and break everything else. I also documented a case where I couldn't use a basic AWS IPAM feature: [resource planning pools are not supported by the Terraform AWS provider](https://github.com/hashicorp/terraform-provider-aws/issues/34615).<br/><br/>On a daily basis, and at scale, these problems accumulate; the effort wasted diminishes the benefits that people ascribed to Terraform. (My advice is specifically for managing _AWS_ resources. Use whatever IaC tool you like for non-AWS stuff, prioritizing the many, close relationships between components created with the AWS API, over the few, weak dependencies between AWS- and non-AWS components.)|
 
 In short, added complexity in any piece of software, any framework, any tool
 had better come with a unique, tangible, and substantial benefit. Otherwise, a
