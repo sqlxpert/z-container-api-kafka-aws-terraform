@@ -181,6 +181,7 @@ Jump to:
     HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
 
     cd ../python_docker
+
     ```
 
     ```shell
@@ -207,11 +208,12 @@ Jump to:
  9. Generate the URLs and then test your API.
 
     ```shell
-    echo "'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'"
+    echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
     ```
 
-    Using your Web browser, or `curl --location --insecure`&nbsp;, visit the
-    different URLs.
+    Try the different URLs using your Web browser or
+    `curl --location --insecure`
+    (the options allow redirect and self-signed TLS certificates).
 
     |URL|Result Expected|
     |:---|:---|
