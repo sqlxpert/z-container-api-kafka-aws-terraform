@@ -373,7 +373,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
 13. Set the `enable_kafka`&nbsp;,
     `hello_api_aws_ecs_service_desired_count_tasks` and
-    `create_vpc_endpoints_and_load_balancer`&nbsp;, variables to their
+    `create_vpc_endpoints_and_load_balancer` variables to their
     cost-saving values if you'd like to continue experimenting. When you are
     done, delete all resources; even the minimum configuration carries a cost.
 
