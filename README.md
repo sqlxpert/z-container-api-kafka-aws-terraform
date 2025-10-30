@@ -164,8 +164,8 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     ```
 
- 5. In CloudShell (optional if you chose EC2), configure the Terraform S3
-    backend.
+ 5. In CloudShell (optional if you chose EC2), configure the
+    [Terraform S3 backend](https://developer.hashicorp.com/terraform/language/backend/s3).
 
     In `terraform.tf`&nbsp;, change the `terraform.backend` block to:
 
@@ -216,7 +216,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     - If you receive a "Registry with name `lambda-testevent-schemas` already
       exists" error, set
-      `create_lambda_testevent_schema_registry = false` in Terraform, then run
+      `create_lambda_testevent_schema_registry = false`&nbsp;, then run
       `terraform apply` again.
 
     </details>
@@ -267,9 +267,9 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     </details>
 
- 8. If you wish to enable Kafka, set `enable_kafka = true` in Terraform, then
-    run `terraform apply` again. AWS MSK is expensive, so enable Kafka only
-    after confirming that the rest of the system is working for you.
+ 8. If you wish to enable Kafka, set `enable_kafka = true`&nbsp; then run
+    `terraform apply`&nbsp;. AWS MSK is expensive, so enable Kafka only after
+    confirming that the rest of the system is working for you.
 
     - For additional cost savings while you are experimenting, you can set
       `create_vpc_endpoints_and_load_balancer = false` until you have
