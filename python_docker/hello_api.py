@@ -50,9 +50,6 @@ class MSKTokenProvider(kafka_AbstractTokenProvider):  # pylint:disable=too-few-p
 
     def token(self):
         """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
-
-        TODO: Check whether configuration is suitable for production, with
-        timeouts, retry logic, etc.
         """
         (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
         return token
