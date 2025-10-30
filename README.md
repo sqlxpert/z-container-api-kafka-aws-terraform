@@ -444,7 +444,7 @@ This is a comprehensive, working system. I made some executive decisions:
   NAT Gateway is a very expensive AWS service, and from a network security
   perspective, it's better to keep as much network traffic private as possible.
   Accordingly, I define VPC endpoints for all necessary AWS services and leave
-  the NAT Gateway off be default. I go a bit beyond AWS's recommendations for
+  the NAT Gateway off by default. I go a bit beyond AWS's recommendations for
   the endpoint security groups, using strict reciprocal pairs to determine
   which resources can access which AWS service endpoints, instead of opening
   them to entire subnets, let alone to the entire VPC. I don't use endpoint
