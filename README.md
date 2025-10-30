@@ -152,15 +152,15 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     ```shell
     cd ~
-    git clone 'https://github.com/sqlxpert/z-container-api-kafka-aws-terraform.git'
-    cd z-container-api-kafka-aws-terraform/terraform
+    git clone 'https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws.git'
+    cd docker-python-openapi-kafka-terraform-cloudformation-aws/terraform
 
     ```
 
     You may wish to create the `terraform.tfvars` file to customize variables.
 
     ```shell
-    touch ~/z-container-api-kafka-aws-terraform/terraform/terraform.tfvars
+    touch ~/docker-python-openapi-kafka-terraform-cloudformation-aws/terraform/terraform.tfvars
 
     ```
 
@@ -427,7 +427,7 @@ This is a comprehensive, working system. I made some executive decisions:
   offer a great way to bundle test events in infrastructure-as-code templates.
   Users can trigger realistic tests in a development AWS account, using the AWS
   Console, the AWS&nbsp;CLI, or a test program. See the
-  [Lambda test event source](https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/d98c1cc/cloudformation/kafka_consumer.yaml#L567-L598).
+  [Lambda test event source](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/d98c1cc/cloudformation/kafka_consumer.yaml#L567-L598).
 
 - **CloudFormation for the Kafka Consumer**
   I defined the Kafka consumer in CloudFormation, called from Terraform,

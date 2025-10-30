@@ -1,5 +1,5 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
-# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
+# github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
 variable "aws_region_main" {
@@ -78,14 +78,14 @@ variable "create_nat_gateway" {
 
 variable "amazon_linux_base_version" {
   type        = string
-  description = "The version of the Amazon Linux base image. See https://docs.aws.amazon.com/linux/al2023/ug/base-container.html , https://gallery.ecr.aws/amazonlinux/amazonlinux , and https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
+  description = "The version of the Amazon Linux base image. See docs.aws.amazon.com/linux/al2023/ug/base-container.html , gallery.ecr.aws/amazonlinux/amazonlinux , and github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
   default = "2023.8.20250818.0"
 }
 
 variable "amazon_linux_base_digest" {
   type        = string
-  description = "The digest of the Amazon Linux base image. See https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
+  description = "The digest of the Amazon Linux base image. See github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
   default = "sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
 }
