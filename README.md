@@ -6,12 +6,12 @@ This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
 consumer setup for AWS, provisioned with Terraform and CloudFormation. I wrote
 it in September,&nbsp;2025, in response to a take-home technical exercise.
 
+Freed from the yoke of an uninsightful specification written by a non-AWS-savvy
+organization, I enhanced the project's cost profile and network security in
+October,&nbsp;2025.
+
 Have fun experimenting with it, see if you can re-use parts of it in your own
 projects, and feel free to send comments and questions!
-
-Freed from the yoke of a specification written by an uninsightful,
-non-AWS-savvy employer, I have enhanced the project's cost profile and network
-security.
 
 Jump to:
 [Commentary](#commentary)
