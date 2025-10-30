@@ -1,5 +1,5 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
-# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
+# github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
 # Defaults required:
@@ -13,14 +13,14 @@ ARG AMAZON_LINUX_BASE_DIGEST
 LABEL org.opencontainers.image.base.name="docker.io/library/amazonlinux:${AMAZON_LINUX_BASE_VERSION}"
 LABEL org.opencontainers.image.base.digest="${AMAZON_LINUX_BASE_DIGEST}"
 
-LABEL org.opencontainers.image.documentation="https://github.com/sqlxpert/z-container-api-kafka-aws-terraform"
+LABEL org.opencontainers.image.documentation="https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws"
 
 LABEL org.opencontainers.image.title="Hello world API"
 LABEL org.opencontainers.image.description="Uses Python 3.12, OpenAPI 3.0, Connexion, Uvicorn workers, Gunicorn"
 LABEL org.opencontainers.image.authors="Paul Marcelin"
 LABEL org.opencontainers.image.vendor="Paul Marcelin"
 LABEL org.opencontainers.image.licenses="GPL-3.0-only"
-LABEL org.opencontainers.image.source="https://github.com/sqlxpert/z-container-api-kafka-aws-terraform/blob/main/Dockerfile"
+LABEL org.opencontainers.image.source="https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/Dockerfile"
 
 SHELL ["/usr/bin/bash", "-c"]
 

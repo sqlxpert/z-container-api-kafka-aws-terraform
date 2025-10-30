@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
+"""Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
 
-github.com/sqlxpert/z-container-api-kafka-aws-terraform
+github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 GPLv3, Copyright Paul Marcelin
 """
 

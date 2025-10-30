@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: |-
   Lambda consumer for Kafka (AWS MSK)
-  github.com/sqlxpert/z-container-api-kafka-aws-terraform
+  github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
   GPLv3, Copyright Paul Marcelin
 
 Parameters:
@@ -14,7 +14,7 @@ Parameters:
 
   PlaceholderHelp:
     Type: String
-    Default: "github.com/sqlxpert/github.com/sqlxpert/z-container-api-kafka-aws-terraform"
+    Default: "github.com/sqlxpert/github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws"
 
   Enable:
     Type: String
@@ -566,7 +566,7 @@ Resources:
             "examples": {
               "BasicTest": {
                 "value": {
-                  "Help1": "github.com/sqlxpert/z-container-api-kafka-aws-terraform",
+                  "Help1": "github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws",
                   "Help2": "docs.aws.amazon.com/lambda/latest/dg/testing-functions.html#creating-shareable-events",
                   "eventSource": "aws:kafka",
                   "eventSourceArn": "arn:aws:kafka:${AWS::Region}:${AWS::AccountId}:cluster/hello-api/c309bb1c-3d72-4533-a051-03de84fc83ce-s2",
@@ -653,9 +653,9 @@ Resources:
       Code:
         ZipFile: |
           #!/usr/bin/env python3
-          """Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
+          """Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
 
-          github.com/sqlxpert/z-container-api-kafka-aws-terraform
+          github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
           GPLv3, Copyright Paul Marcelin
           """
 

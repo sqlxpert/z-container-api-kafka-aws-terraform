@@ -1,5 +1,5 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
-# github.com/sqlxpert/z-container-api-kafka-aws-terraform
+# Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
+# github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
 provider "aws" {
@@ -10,7 +10,7 @@ provider "aws" {
   default_tags {
     tags = {
       terraform = "1"
-      source    = "github.com/sqlxpert/z-container-api-kafka-aws-terraform/tree/main/terraform"
+      source    = "github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/tree/main/terraform"
       author    = "Paul Marcelin"
     }
   }
