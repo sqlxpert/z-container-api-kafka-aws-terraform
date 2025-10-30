@@ -71,8 +71,8 @@ resource "aws_ecs_task_definition" "hello_api" {
     operating_system_family = "LINUX"
   }
 
-  execution_role_arn = aws_iam_role.hello_api_ecs_task_execution.arn
-  task_role_arn      = aws_iam_role.hello_api_ecs_task.arn
+  execution_role_arn = aws_iam_role.hello["hello_api_ecs_task_execution"].arn
+  task_role_arn      = aws_iam_role.hello["hello_api_ecs_task"].arn
 
   container_definitions = jsonencode([
     {

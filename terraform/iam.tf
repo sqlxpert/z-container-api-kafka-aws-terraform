@@ -13,13 +13,6 @@ data "aws_iam_policy_document" "hello_api_ecs_task_execution_assume_role" {
     actions = ["sts:AssumeRole"]
   }
 }
-resource "aws_iam_role" "hello_api_ecs_task_execution" {
-  name = "hello_api_ecs_task_execution"
-
-  assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_execution_assume_role.json
-}
-
-
 
 data "aws_iam_policy_document" "hello_api_ecs_task_assume_role" {
   statement {
@@ -41,10 +34,70 @@ data "aws_iam_policy_document" "hello_api_ecs_task_assume_role" {
     }
   }
 }
-resource "aws_iam_role" "hello_api_ecs_task" {
-  name = "hello_api_ecs_task"
 
-  assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_assume_role.json
+
+
+locals {
+  roles = {
+
+    "hello_api_ecs_task_execution" = {
+      assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_execution_assume_role
+      aws_policy_names = [
+        "AmazonECSTaskExecutionRolePolicy",
+      ]
+    }
+
+    "hello_api_ecs_task" = {
+      assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_assume_role
+      aws_policy_names = [
+      ]
+    }
+  }
+
+  aws_policy_names_set = toset(
+    flatten(values(local.roles)[*]["aws_policy_names"])
+  )
+
+  role_policy_attachments = flatten([
+    for role_name, role_detail
+    in local.roles : [
+      for aws_policy_name
+      in role_detail["aws_policy_names"] :
+      {
+        "role_name"       = role_name
+        "aws_policy_name" = aws_policy_name
+      }
+  ]])
+
+  role_policy_attachments_map = {
+    for attach in local.role_policy_attachments :
+    join(":", [attach["role_name"], attach["aws_policy_name"]]) => attach
+  }
+}
+
+resource "aws_iam_role" "hello" {
+  for_each = local.roles
+
+  name = each.key
+
+  assume_role_policy = each.value.assume_role_policy.json
+}
+
+data "aws_iam_policy" "aws" {
+  for_each = local.aws_policy_names_set
+
+  name = each.key
+}
+
+resource "aws_iam_role_policy_attachment" "hello_aws" {
+  for_each = local.role_policy_attachments_map
+
+  role       = each.value["role_name"]
+  policy_arn = data.aws_iam_policy.aws[each.value["aws_policy_name"]].arn
+
+  depends_on = [
+    aws_iam_role.hello,
+  ]
 }
 
 
@@ -93,6 +146,7 @@ data "aws_iam_policy_document" "kafka_write" {
     ])]
   }
 }
+
 resource "aws_iam_policy" "kafka_write" {
   count = var.enable_kafka ? 1 : 0
 
@@ -101,73 +155,10 @@ resource "aws_iam_policy" "kafka_write" {
 
   policy = data.aws_iam_policy_document.kafka_write[0].json
 }
+
 resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
   count = var.enable_kafka ? 1 : 0
 
-  role       = aws_iam_role.hello_api_ecs_task.name
-  policy_arn = one(aws_iam_policy.kafka_write).arn
-}
-
-
-
-# AWS-managed IAM policies may be overly permissive. Adjust where
-# least-privilege counts!
-
-locals {
-  iam_role_name_to_aws_managed_iam_policy_names = {
-
-    "hello_api_ecs_task_execution" = [
-      "AmazonECSTaskExecutionRolePolicy"
-    ]
-
-    "hello_api_ecs_task" = [
-    ]
-  }
-
-  # The map seeds aws_iam_role_policy_attachment resources, but it could also
-  # seed aws_iam_role resources. Expressing role trust policies in HCL object
-  # form and calling jsonencode() instead of expressing them in HCL block form
-  # in data.aws_iam_policy_document is the tradeoff.
-
-  iam_role_policy_attachments = flatten([
-    for iam_role_name, aws_managed_iam_policy_names in local.iam_role_name_to_aws_managed_iam_policy_names : [
-      for aws_managed_iam_policy_name in aws_managed_iam_policy_names :
-      {
-        iam_role_name               = iam_role_name,
-        aws_managed_iam_policy_name = aws_managed_iam_policy_name
-      }
-    ]
-  ])
-
-  iam_role_policy_attachments_delimiter = "|"
-  iam_role_policy_attachment_strings = toset([
-    for iam_role_policy_attachment in local.iam_role_policy_attachments :
-    join("", [
-      iam_role_policy_attachment.iam_role_name,
-      local.iam_role_policy_attachments_delimiter,
-      iam_role_policy_attachment.aws_managed_iam_policy_name
-    ])
-  ])
-
-  aws_managed_iam_policy_names = toset(
-    local.iam_role_policy_attachments[*].aws_managed_iam_policy_name
-  )
-}
-
-data "aws_iam_policy" "aws_managed" {
-  for_each = local.aws_managed_iam_policy_names
-
-  name = each.key
-}
-resource "aws_iam_role_policy_attachment" "aws_managed" {
-  for_each = local.iam_role_policy_attachment_strings
-
-  role       = split(local.iam_role_policy_attachments_delimiter, each.key)[0]
-  policy_arn = data.aws_iam_policy.aws_managed[split(local.iam_role_policy_attachments_delimiter, each.key)[1]].arn
-
-  # Yuck! If only Terraform were a tiny bit smarter with dependencies...
-  depends_on = [
-    aws_iam_role.hello_api_ecs_task_execution,
-    aws_iam_role.hello_api_ecs_task
-  ]
+  role       = aws_iam_role.hello["hello_api_ecs_task"].name
+  policy_arn = aws_iam_policy.kafka_write[0].arn
 }
