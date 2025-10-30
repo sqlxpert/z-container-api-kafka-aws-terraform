@@ -1,11 +1,10 @@
-# Containerized API, Kafka Cluster, Lambda Consumer
+# Containerized Python API, Kafka Cluster, Lambda Consumer
 
 Hello!
 
-This is a containerized REST API &rarr; managed Kafka cluster &rarr; Lambda
-consumer system for AWS, provisioned with Terraform and CloudFormation. I wrote
-it in September,&nbsp;2025, in response to a take-home technical exercise
-(hence the `z-` prefix).
+This is a containerized Python API &rarr; managed Kafka cluster &rarr; AWS
+Lambda consumer system, provisioned with Terraform and CloudFormation. I wrote
+it in September,&nbsp;2025, in response to a take-home technical exercise.
 
 Freed from the yoke of an uninsightful specification written by a non-AWS-savvy
 organization, I enhanced the project's cost profile and network security in
@@ -23,46 +22,21 @@ Jump to:
 
 ## Getting Started
 
-<details>
-  <summary>Why these instructions include long option names...</summary>
-
-<br/>
-
-Make fun of me all you want, but I write long option names so that other
-people don't have to look up unfamiliar single-letter options &mdash; assuming
-they can _find_ them!
-
-Here's an example that shows why I go to the trouble, even at the expense of
-being laughed at by macho Linux users. I started using UNICOS in 1991, so it's
-not for lack of experience.
-
-Search for the literal text `-t` in
-[docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
-using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
-2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
-
-Where available, full-text (that is, not strictly literal) search engines
-can't make sense of a 1-letter search term and are also likely to ignore a
-2-character term as a "stop-word" that's too short to search for.
-
-</details>
-
- 1. Authenticate to the AWS Console. Use a non-production AWS account and a
-    privileged role.
-
- 2. Choose between
+ 1. Choose between
     [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
-    or an EC2 instance for building the container image and running Terraform.
+    or an EC2 instance for building the Docker image and running Terraform.
 
     - **CloudShell**<br/>_Easy_ &check;
+
+      - Authenticate to the AWS Console. Use a non-production AWS account and
+        a privileged role.
 
       - Open an
         [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home)
         terminal.
 
-      - Prepare for a cross-platform container image build. CloudShell
-        seems to provide Intel CPUs, whereas I selected ARM to reduce
-        ECS Fargate compute costs. These instructions are from
+      - Prepare for a cross-platform container image build. CloudShell seems to
+        provide Intel CPUs. The following instructions are from
         [Multi-platform builds](https://docs.docker.com/build/building/multi-platform/#prerequisites)
         in the Docker Build manual.
 
@@ -74,11 +48,16 @@ can't make sense of a 1-letter search term and are also likely to ignore a
         sudo docker run --privileged --rm tonistiigi/binfmt --install all
         ```
 
-      - [Create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
+      - Review the
+        ([Terraform S3 backend documentation](https://developer.hashicorp.com/terraform/language/backend/s3)
+        and
+        [create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
         to store Terraform state.
 
-      - If your previous session has expired, you can repeat setup commands as
-        needed.
+      - If at any time you find that your previous CloudShell session has
+        expired, repeat any necessary software installation steps. Your home
+        directory is preserved between sessions, subject to
+        [CloudShell persistent storage limitations](https://docs.aws.amazon.com/cloudshell/latest/userguide/limits.html#persistent-storage-limitations).
 
     - **EC2 instance**
 
@@ -91,12 +70,11 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
         - `arm64`
         - `t4g.micro` &#9888; The ARM-based AWS Graviton `g` architecture
-          avoids multi-platform build complexity; I selected ARM to
-          reduce ECS Fargate compute costs.
+          avoids multi-platform build complexity.
         - Amazon Linux 2023
         - A 30&nbsp;GiB EBS volume, with default encryption (supports
           hibernation)
-        - No key pair; connect with
+        - No key pair; connect through
           [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html)
         - A custom security group with no ingress rules (yay for Session
           Manager!)
@@ -107,12 +85,11 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
       - During the instance creation workflow (Advanced details &rarr; IAM
         instance profile &rarr; Create new IAM profile) or afterward, give
-        your EC2 instance a custom role. The policies must be sufficient for
-        Terraform to list/describe, get tags for, create, tag, untag, update,
-        and delete all the AWS resource types included in this project's `.tf`
-        files.
+        your EC2 instance a custom role. Terraform must be able to
+        list/describe, get tags for, create, tag, untag, update, and delete all
+        of the AWS resource types included in this project's `.tf` files.
 
-      - Update packages (thanks to AWS's
+      - Update operating system packages (thanks to AWS's
         [deterministic upgrade philosophy](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html),
         there shouldn't be any updates if you chose the latest Amazon Linux
         2023 image), install Docker, and start it.
@@ -135,7 +112,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
       </details>
 
- 3. Install Terraform. I'm standardizing on
+ 2. Install Terraform. I'm standardizing on
     [Terraform v1.10.0 (2024-11-27)](https://github.com/hashicorp/terraform/releases/tag/v1.10.0)
     as the minimum supported version for my open-source projects.
 
@@ -145,31 +122,28 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     ```shell
     sudo dnf config-manager --add-repo 'https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo'
-    sudo dnf --assumeyes install terraform-1.10.0-1
+    # sudo dnf --assumeyes install terraform-1.10.0-1
+    sudo dnf --assumeyes install terraform
     ```
 
- 4. Clone this repository.
+ 3. Clone this repository and create `terraform.tfvars` to customize variables.
 
     ```shell
     cd ~
     git clone 'https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws.git'
     cd docker-python-openapi-kafka-terraform-cloudformation-aws/terraform
+    touch terraform.tfvars
 
     ```
 
-    You may wish to create the `terraform.tfvars` file to customize variables.
+    _Optional:_ To save a little money while building the Docker container
+    image, you can set `create_vpc_endpoints_and_load_balancer = false`&nbsp;.
 
-    ```shell
-    touch ~/docker-python-openapi-kafka-terraform-cloudformation-aws/terraform/terraform.tfvars
-
-    ```
-
- 5. In CloudShell (optional if you chose EC2), configure the
-    [Terraform S3 backend](https://developer.hashicorp.com/terraform/language/backend/s3).
-
-    In `terraform.tf`&nbsp;, change the `terraform.backend` block to:
+ 4. In CloudShell (optional if you chose EC2),  create `terraform_override.tf`
+    and configure the S3 backend.
 
     ```terraform
+    terraform {
       backend "s3" {
         insecure = false
 
@@ -179,14 +153,28 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
         use_lockfile = true # No more DynamoDB; now S3-native!
       }
+    }
     ```
 
- 6. Initialize Terraform and create the AWS infrastructure. There's no need for
+ 5. Initialize Terraform and create the AWS infrastructure. There's no need for
     a separate `terraform plan` step. `terraform apply` outputs the plan and
     gives you a chance to approve before anything is done. If you don't like
     the plan, don't type `yes`&nbsp;!
 
-    > CloudPosse's otherwise excellent
+    ```shell
+    terraform init
+    ```
+
+    ```shell
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+    ```
+
+    <details>
+      <summary>About the two-stage process...</summary>
+
+    <br/>
+
+    CloudPosse's otherwise excellent
     [dynamic-subnets](https://registry.terraform.io/modules/cloudposse/dynamic-subnets/aws/latest)
     module isn't dynamic enough to work with
     [AWS IP Address Manager
@@ -197,13 +185,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
     brittle configuration rather than a general-purpose, reusable
     infrastructure template.
 
-    ```shell
-    terraform init
-    ```
-
-    ```shell
-    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
-    ```
+    </details>
 
     ```shell
     terraform apply
@@ -221,8 +203,8 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     </details>
 
- 7. Set environment variables needed for building, tagging and pushing up the
-    container image, then build the image.
+ 6. Set environment variables needed for building, tagging and pushing up the
+    Docker container image, then build it.
 
     ```shell
     AMAZON_LINUX_BASE_VERSION=$(terraform output -raw 'amazon_linux_base_version')
@@ -256,31 +238,26 @@ can't make sense of a 1-letter search term and are also likely to ignore a
     - You can select a newer Amazon Linux release by setting the
       `amazon_linux_base_version` and `amazon_linux_base_digest` variables in
       Terraform, running `terraform apply`&nbsp;, and re-setting the
-      environment variables as described above.
+      environment variables.
 
-      Then, to update the image, execute `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
+      Then, to update the image, run `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
       (choose an appropriate new version number, taking
       [semantic versioning](https://semver.org/#semantic-versioning-specification-semver)
-      into account), re-build the image, push it to the repository, set
+      into account), re-build the image, push it up to the repository, set
       `hello_api_aws_ecr_image_tag = "1.0.1"` (for example) in Terraform, and
       run `terraform apply` again.
 
     </details>
 
- 8. If you wish to enable Kafka, set `enable_kafka = true`&nbsp; then run
-    `terraform apply`&nbsp;. AWS MSK is expensive, so enable Kafka only after
-    confirming that the rest of the system is working for you.
+ 7. _If_ you changed
+    `create_vpc_endpoints_and_load_balancer` in Step&nbsp;3, change the value
+    back to `true` and run `terraform apply`&nbsp;.
 
-    - For additional cost savings while you are experimenting, you can set
-      `create_vpc_endpoints_and_load_balancer = false` until you have
-      completed Step&nbsp;7.
-
- 9. In the Amazon Elastic Container Service section of the AWS Console, check
-    the `hello_api` cluster. Eventually, you should see that 2&nbsp;tasks are
-    running.
+ 8. In the Amazon Elastic Container Service section of the AWS Console, check
+    the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
 
     <details>
-      <summary>ECS deployment time and task count...</summary>
+      <summary>Container deployment time and task count...</summary>
 
     <br/>
 
@@ -297,7 +274,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     </details>
 
-10. Generate the URLs and then test your API.
+ 9. Generate the URLs and then test your API.
 
     ```shell
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
@@ -305,7 +282,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     Try the different URLs using your Web browser or
     `curl --location --insecure`
-    (the options allow redirection and self-signed TLS certificates).
+    (these options allow redirection and self-signed TLS certificates).
 
     |URL|Result Expected|
     |:---|:---|
@@ -315,8 +292,8 @@ can't make sense of a 1-letter search term and are also likely to ignore a
     |`http://DOMAIN/current_time?name=;echo`|HTTP `400` "bad request" error;<br/>Demonstrates protection from command injection|
     |`http://DOMAIN/error`|HTTP `404` "not found" error|
 
-    Replace _DOMAIN_ with the value of the
-    `hello_api_load_balander_domain_name` Terraform output.
+    ...where _DOMAIN_ is the value of the `hello_api_load_balander_domain_name`
+    Terraform output.
 
     <details>
       <summary>About HTTPS redirection and certificates...</summary>
@@ -337,7 +314,7 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     </details>
 
-11. Access the
+10. Access the
     [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
     CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
     reserved for future use.)
@@ -361,21 +338,41 @@ can't make sense of a 1-letter search term and are also likely to ignore a
 
     </details>
 
-12. If you set `enable_kafka` to `true` in Step&nbsp;8, access the
+11. If you don't wish use Kafka, skip to Step&nbsp;13.
+
+    If you wish to enable Kafka, set `enable_kafka = true`&nbsp; and run
+    `terraform apply`&nbsp;. AWS MSK is expensive, so enable Kafka only after
+    confirming that the rest of the system is working for you.
+
+    <details>
+      <summary>In case HelloApiKafkaConsumer CloudFormation stack creation fails...</summary>
+
+    <br/>
+
+    Creation of the Kafka consumer might fail for various reasons. Once the
+    `HelloApiKafkaConsumer` CloudFormation stack is in `ROLLBACK_COMPLETE`
+    status, delete it, then run `terraform apply` again.
+
+    <br/>
+
+    </details>
+
+12. Access the `http://DOMAIN/current_time?name=Paul` path several times
+    (adjust the name as you wish). The first use of this path prompts creation
+    of the `events` Kafka topic. From now on, use of this path (this path only)
+    triggers a message to the `events` topic.
+
+    The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
+    reads the topic and triggers the consumer Lambda function, which logs
+    decoded Kafka messages to the
     [HelloApiKafkaConsumer](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
     CloudWatch log group.
 
-    Any reflected greetings were sent by the API code to Kafka, then retrieved
-    from Kafka by the
-    [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview),
-    which in turn triggered the consumer Lambda function. It decodes the
-    messages from Kafka and logs them.
-
 13. Set the `enable_kafka`&nbsp;,
     `hello_api_aws_ecs_service_desired_count_tasks` and
-    `create_vpc_endpoints_and_load_balancer` variables to their
-    cost-saving values if you'd like to continue experimenting. When you are
-    done, delete all resources; even the minimum configuration carries a cost.
+    `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
+    values if you'd like to continue experimenting. When you are done, delete
+    all resources; even the minimum configuration carries a cost.
 
     ```shell
     cd ../terraform
@@ -481,6 +478,35 @@ most startups.)
 In short, added complexity in any piece of software, any framework, any tool
 had better come with a unique, tangible, and substantial benefit. Otherwise, a
 resource-constrained startup is better off choosing the simpler alternative.
+
+## Parking Lot
+
+
+<details>
+  <summary>Why these instructions include long option names...</summary>
+
+<br/>
+
+Make fun of me all you want, but I write long option names so that other
+people don't have to look up unfamiliar single-letter options &mdash; assuming
+they can _find_ them!
+
+Here's an example that shows why I go to the trouble, even at the expense of
+being laughed at by macho Linux users. I started using UNICOS in 1991, so it's
+not for lack of experience.
+
+Search for the literal text `-t` in
+[docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
+using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
+2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
+
+Where available, full-text (that is, not strictly literal) search engines
+can't make sense of a 1-letter search term and are also likely to ignore a
+2-character term as a "stop-word" that's too short to search for.
+
+</details>
+
+
 
 ## Licenses
 
