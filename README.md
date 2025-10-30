@@ -432,13 +432,13 @@ This is a comprehensive, working system. I made some executive decisions:
 - **CloudFormation for the Kafka Consumer**
   I defined the Kafka consumer in CloudFormation, called from Terraform,
   because I had complete and thoroughly-tested CloudFormation templates for
-  Lambda functions and their dependencies from my other projects. I speak both
+  Lambda functions and their dependencies, from my other projects. I speak both
   Terraform and CloudFormation, and each approach to infrastructure-as-code has
   its advantages. Here, re-using CloudFormation code saved me time. It also
-  happened to establish a clean separation between the Kafka producer and the
-  consumer. The consumer only needs the MSK cluster ARN, the topic name, the
-  subnet IDs for the cluster's private subnets, and the ID of a security group
-  for the VPC Lambda function.
+  happens to establish a clean, modular separation between the Kafka producer
+  and the consumer. The consumer only needs to know the MSK cluster ARN, the
+  topic, and private subnet IDs and a security group ID for the VPC Lambda
+  function.
 
 - **PrivateLink**
   NAT Gateway is a very expensive AWS service, and from a network security
