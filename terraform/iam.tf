@@ -1,20 +1,6 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
-
-data "aws_caller_identity" "current" {}
-
-
-
-# To reduce free labor on this demonstration project, I rely on AWS-managed IAM
-# policies, which are overly permissive. For examples of my trademark custom
-# least-privilege policies, see my pre-existing open-source projects.
-#
-# Least-privilege deployment role:
-# https://github.com/sqlxpert/lights-off-aws/blob/fe1b565/cloudformation/lights_off_aws_prereq.yaml#L83-L267
-#
-# Least-privilege Lambda function roles:
-# https://github.com/sqlxpert/lights-off-aws/blob/8e45026/cloudformation/lights_off_aws.yaml#L484-L741
 
 
 
@@ -46,12 +32,12 @@ data "aws_iam_policy_document" "hello_api_ecs_task_assume_role" {
     condition {
       test     = "ArnLike"
       variable = "aws:SourceArn"
-      values   = ["arn:aws:ecs:${local.aws_region_main}:${data.aws_caller_identity.current.account_id}:*"]
+      values   = ["arn:${local.aws_partition}:ecs:${local.aws_region_main}:${local.aws_account_id}:*"]
     }
     condition {
       test     = "StringEquals"
       variable = "aws:SourceAccount"
-      values   = [data.aws_caller_identity.current.account_id]
+      values   = [local.aws_account_id]
     }
   }
 }
@@ -68,49 +54,43 @@ resource "aws_iam_role" "hello_api_ecs_task" {
 # https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
 
 data "aws_iam_policy_document" "kafka_write" {
+  count = var.enable_kafka ? 1 : 0
+
   statement {
     actions = [
+      "kafka:GetBootstrapBrokers",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    actions = [
+      "kafka:DescribeClusterV2",
       "kafka-cluster:Connect",
-      "kafka-cluster:DescribeCluster"
+      "kafka-cluster:DescribeCluster",
     ]
-    resources = [
-      try(
-        aws_msk_serverless_cluster.hello_api[0].arn,
-        "*"
-      )
-    ]
+    resources = [aws_msk_serverless_cluster.hello_api[0].arn]
   }
   statement {
     actions = [
       "kafka-cluster:CreateTopic",
       "kafka-cluster:DescribeTopic",
       "kafka-cluster:WriteData",
-      "kafka-cluster:ReadData"
+      "kafka-cluster:ReadData",
     ]
-    resources = [
-      try(
-        join("/", [
-          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
-          var.kafka_topic
-        ]),
-        "*"
-      )
-    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
+      var.kafka_topic
+    ])]
   }
   statement {
     actions = [
+      "kafka-cluster:DescribeGroup",
       "kafka-cluster:AlterGroup",
-      "kafka-cluster:DescribeGroup"
     ]
-    resources = [
-      try(
-        join("/", [
-          replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
-          "*"
-        ]),
-        "*"
-      )
-    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+      "*"
+    ])]
   }
 }
 resource "aws_iam_policy" "kafka_write" {
@@ -119,7 +99,7 @@ resource "aws_iam_policy" "kafka_write" {
   name        = "kafka_write"
   description = "MSK hello_api cluster: create, write to '{$var.kafka_topic}' topic"
 
-  policy = data.aws_iam_policy_document.kafka_write.json
+  policy = data.aws_iam_policy_document.kafka_write[0].json
 }
 resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
   count = var.enable_kafka ? 1 : 0
@@ -129,6 +109,9 @@ resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
 }
 
 
+
+# AWS-managed IAM policies may be overly permissive. Adjust where
+# least-privilege counts!
 
 locals {
   iam_role_name_to_aws_managed_iam_policy_names = {

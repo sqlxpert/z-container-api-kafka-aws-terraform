@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+"""Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 
 github.com/sqlxpert/z-container-api-kafka-aws-terraform
 GPLv3, Copyright Paul Marcelin
@@ -50,9 +50,6 @@ class MSKTokenProvider(kafka_AbstractTokenProvider):  # pylint:disable=too-few-p
 
     def token(self):
         """Get an OAUTHBEARER token to access AWS MSK using IAM permissions
-
-        TODO: Check whether configuration is suitable for production, with
-        timeouts, retry logic, etc.
         """
         (token, _) = MSKAuthTokenProvider.generate_auth_token(AWS_REGION)
         return token
@@ -147,7 +144,7 @@ def kafka_producer_get():
                 default=str
             ).encode("utf-8"),
 
-            # Send more or less immediately, for this demonstration
+            # Send more or less immediately (adjust for larger volume of data)
             batch_size=0,
             request_timeout_ms=500,
             linger_ms=0,
@@ -174,7 +171,7 @@ def hello_get():
     """
     return (
         {
-            "message": "Hello World!",
+            "message": "Hello, World!",
         },
         200,
     )
@@ -185,7 +182,7 @@ def current_time_get(name):
     """
     message = {
         "timestamp": int(time_time()),  # Truncate fractional second
-        "message": f"Hello {name}",
+        "message": f"Hello, {name}!",
     }
     if ENABLE_KAFKA:
 

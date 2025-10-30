@@ -1,4 +1,4 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
@@ -13,8 +13,8 @@ resource "aws_lb" "hello_api" {
   subnets         = module.hello_api_vpc_subnets.public_subnet_ids
 
   security_groups = [
-    aws_security_group.hello_api_load_balancer_outside.id,
-    aws_security_group.hello_api_load_balancer_inside.id
+    aws_security_group.hello["hello_api_public"].id,
+    aws_security_group.hello["hello_api_private_client"].id
   ]
 
   idle_timeout = 10 # seconds
@@ -32,13 +32,13 @@ resource "aws_lb_target_group" "hello_api" {
 
   vpc_id      = module.hello_api_vpc.vpc_id
   target_type = "ip"
-  port        = local.tcp_ports["hello_api"]
+  port        = local.tcp_ports["hello_api_private"]
   protocol    = "HTTP"
 
   health_check {
     enabled = true
 
-    port     = local.tcp_ports["hello_api"]
+    port     = local.tcp_ports["hello_api_private"]
     protocol = "HTTP"
     path     = "/healthcheck"
 

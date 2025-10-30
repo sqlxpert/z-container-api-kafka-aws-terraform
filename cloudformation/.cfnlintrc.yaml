@@ -1,8 +1,9 @@
+---
 # Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
-*
-!requirements.txt
-!hello_api.openapi.yaml
-!hello_api.py
+ignore_checks:
+  - W2510
+  # W2510: Lambda Memory Size parameters should use MinValue, MaxValue or
+  #        AllowedValues: See comment about "underlying APIs"

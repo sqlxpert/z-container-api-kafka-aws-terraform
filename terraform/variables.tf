@@ -1,4 +1,4 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
@@ -18,7 +18,7 @@ variable "hello_api_aws_ecr_image_tag" {
 
 variable "enable_kafka" {
   type        = bool
-  description = "Whether to create the MSK Serverless cluster. Set to false to significantly reduce costs; the API will write only to the CloudWatch log."
+  description = "Whether to create the MSK Serverless cluster. Set this to false to significantly reduce costs; the API will write only to the CloudWatch log. You must set this to false if create_vpc_endpoints_and_load_balancer is false ."
 
   default = false
 }
@@ -39,16 +39,18 @@ variable "hello_api_aws_ecs_service_desired_count_tasks" {
 
 variable "create_vpc_endpoints_and_load_balancer" {
   type        = bool
-  description = "Whether to create the virtual private cloud (VPC) interface and gateway endpoints and the application load balancer. These expensive resources are not needed until you have built and uploaded the hello_api image and are ready to start the API. You must set this to true if hello_api_aws_ecs_service_desired_count_tasks is greater than 0."
+  description = "Whether to create the virtual private cloud (VPC) interface and gateway endpoints and the application load balancer. These expensive resources are not needed until you have built and uploaded the hello_api image and are ready to start the API. You must set this to true if enable_kafka is true or hello_api_aws_ecs_service_desired_count_tasks is greater than 0."
 
   default = true
 
   validation {
-    error_message = "Before increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
+    error_message = "Before setting enable_kafka to true or increasing hello_api_aws_ecs_service_desired_count_tasks above 0, you must create the virtual private cloud (VPC) interface and gateway endpoints and an application load balancer."
 
     condition = (
-      (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
-      || var.create_vpc_endpoints_and_load_balancer
+      (
+        (var.hello_api_aws_ecs_service_desired_count_tasks < 1)
+        && !var.enable_kafka
+      ) || var.create_vpc_endpoints_and_load_balancer
     )
   }
 }
@@ -60,9 +62,30 @@ variable "enable_https" {
   default = true
 }
 
+variable "create_lambda_testevent_schema_registry" {
+  type        = bool
+  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name lambda-testevent-schemas already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
+
+  default = true
+}
+
 variable "create_nat_gateway" {
   type        = bool
   description = "Whether to create a NAT Gateway (expensive). Gateway and interface endpoints, defined to support ECS Fargate, make the NAT Gateway unnecessary."
 
   default = false
+}
+
+variable "amazon_linux_base_version" {
+  type        = string
+  description = "The version of the Amazon Linux base image. See https://docs.aws.amazon.com/linux/al2023/ug/base-container.html , https://gallery.ecr.aws/amazonlinux/amazonlinux , and https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
+
+  default = "2023.8.20250818.0"
+}
+
+variable "amazon_linux_base_digest" {
+  type        = string
+  description = "The digest of the Amazon Linux base image. See https://github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
+
+  default = "sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
 }

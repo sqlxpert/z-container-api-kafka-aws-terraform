@@ -1,8 +1,9 @@
-# Containerized REST API, Kafka, Lambda consumer, via Terraform (demo)
+# Containerized REST API, Kafka, Lambda consumer, via Terraform+CloudFormation
 # github.com/sqlxpert/z-container-api-kafka-aws-terraform
 # GPLv3, Copyright Paul Marcelin
 
 resource "aws_ecr_repository" "hello_api" {
+  region               = local.aws_region_main
   name                 = "hello_api"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
@@ -34,6 +35,7 @@ data "aws_ecr_lifecycle_policy_document" "hello_api" {
 }
 
 resource "aws_ecr_lifecycle_policy" "hello_api" {
+  region     = local.aws_region_main
   repository = aws_ecr_repository.hello_api.name
 
   policy = data.aws_ecr_lifecycle_policy_document.hello_api.json
