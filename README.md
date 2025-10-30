@@ -268,7 +268,7 @@ Jump to:
     browser if necessary.)
 
 11. Access the
-    [`hello_api_ecs_task`](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
+    [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
     CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
     reserved for future use.)
 
@@ -276,7 +276,7 @@ Jump to:
     appear.
 
 12. If you set `enable_kafka` to `true` in Step&nbsp;8, access the
-    [HelloApiKafkaConsumer](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
+    [HelloApiKafkaConsumer](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
     CloudWatch log group.
 
     Your reflected greetings were sent by the API code to Kafka, then retrieved
