@@ -10,8 +10,8 @@ Have fun experimenting with it, see if you can re-use parts of it in your own
 projects, and feel free to send comments and questions!
 
 Freed from the yoke of a specification written by an uninsightful,
-non-AWS-savvy employer, I've been enhancing this project's cost profile and
-network security, and demonstrating the latest Terraform features.
+non-AWS-savvy employer, I have enhanced the project's cost profile and network
+security.
 
 Jump to:
 [Commentary](#commentary)
@@ -168,6 +168,12 @@ Jump to:
     terraform apply
     ```
 
+    - If you receive a "Registry with name `lambda-testevent-schemas` already
+      exists" error, create a `terraform.tfvars` file in the `terraform/`
+      directory, use it to set
+      `create_lambda_testevent_schema_registry = false`&nbsp;, then run
+      `terraform apply` again.
+
  7. Set environment variables needed for tagging and pushing up the Docker
     image, then build the image.
 
@@ -197,16 +203,39 @@ Jump to:
     sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
     ```
 
- 8. In the Amazon Elastic Container Service section of the AWS Console, check
+    - To update the image, execute `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
+      (choose an appropriate new version number, taking
+      [semantic versioning](https://semver.org/#semantic-versioning-specification-semver)
+      into account), re-build the image, push it to the repository, create a
+      `terraform.tfvars` file in the `terraform/` directory, use it to set
+      `hello_api_aws_ecr_image_tag = "1.0.1"` (for example), and then run
+      `terraform apply`&nbsp;.
+
+      _Before_ re-building the image and changing the version number, you can
+      select a newer Amazon Linux release by setting the
+      `amazon_linux_base_version` and `amazon_linux_base_digest` variables in
+      Terraform, running `terraform apply`&nbsp;, and re-setting the
+      environment variables as described at the start of Step&nbsp;7.
+
+ 8. If you wish to enable Kafka, create a `terraform.tfvars` file in the
+    `terraform/` directory, use it to set `enable_kafka = true`&nbsp;, then run
+    `terraform apply`&nbsp;again. AWS MSK is expensive, so enable Kafka only
+    after confirming that the rest of the system is working for you.
+
+    - For additional cost savings while you are experimenting, you can set
+      `create_vpc_endpoints_and_load_balancer = false` until you have
+      completed Step&nbsp;7.
+
+ 9. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see that 3 tasks are
     running.
 
-    It will take a few minutes for ECS to notice, and then deploy, the
-    container image. Relax, and let it happen. If you are impatient, or if
-    there is a problem, you can navigate to the `hello_api` service, open the
-    orange "Update service" pop-up menu, and select "Force new deployment".
+    - It will take a few minutes for ECS to notice, and then deploy, the
+      container image. Relax, and let it happen. If you are impatient, or if
+      there is a problem, you can navigate to the `hello_api` service, open the
+      orange "Update service" pop-up menu, and select "Force new deployment".
 
- 9. Generate the URLs and then test your API.
+10. Generate the URLs and then test your API.
 
     ```shell
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
@@ -238,15 +267,23 @@ Jump to:
     browser might no longer allow `http:` for that site. Use a separate Web
     browser if necessary.)
 
-10. For more excitement, access the
-    [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs)
+11. Access the
+    [`hello_api_ecs_task`](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
     CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
     reserved for future use.)
 
     Periodic internal health checks, plus your occasional Web requests, should
     appear.
 
-11. Delete the infrastructure as soon as you are done experimenting. I selected
+12. If you set `enable_kafka` to `true` in Step&nbsp;8, access the
+    [HelloApiKafkaConsumer](https://us-west-2.console.aws.amazon.com/cloudwatch/home?region=us-west-2#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
+    CloudWatch log group.
+
+    Your reflected greetings were sent by the API code to Kafka, then retrieved
+    from Kafka by the AWS MSK event source mapping, which in turn triggered the
+    consumer Lambda function. It decodes the messages from Kafka and logs them.
+
+13. Delete the infrastructure as soon as you are done experimenting. I selected
     low-cost options but they are not free.
 
     ```shell
