@@ -279,6 +279,11 @@ can't make sense of a 1-letter search term and are also likely to ignore a
     the `hello_api` cluster. Eventually, you should see that 2&nbsp;tasks are
     running.
 
+    <details>
+      <summary>ECS deployment time and task count...</summary>
+
+    <br/>
+
     - It will take a few minutes for ECS to notice, and then deploy, the
       container image. Relax, and let it happen. If you are impatient, or if
       there is a problem, you can navigate to the `hello_api` service, open the
@@ -289,6 +294,8 @@ can't make sense of a 1-letter search term and are also likely to ignore a
       Fargate compute costs while you are experimenting). To demonstrate
       redundancy in 3&nbsp;availability zones, increase the value to
       3&nbsp;tasks or more.
+
+    </details>
 
 10. Generate the URLs and then test your API.
 
