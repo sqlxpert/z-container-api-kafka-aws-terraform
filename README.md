@@ -24,7 +24,7 @@ use it and adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Small image**|||
 |Package cache|~None~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
 |Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
-|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker multi-stage build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
+|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker&nbsp;multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
 |<br/>**&check; Secure container**|||
 |Base image|~Docker&nbsp;Community&nbsp;Python~<br/>Amazon&nbsp;Linux|Fewer vulnerabilities; frequent updates, _from AWS staff_; [deterministic&nbsp;OS&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)|
 |Image build platform|~Local computer~<br/>[AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)&nbsp;or&nbsp;EC2|Controlled, auditable environment; low malware risk|
