@@ -44,7 +44,7 @@ use it and adapt it for your own projects, under the terms of the license.
 |<br/>**&check; CI/CD-ready**|||
 |Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions|
 |Image build software platform|~MacOS~<br/>Amazon&nbsp;Linux|Ready for centralized building|
-|Private address allocation|~Fixed~<br/>Flexible ([AWS&nbsp;IP&nbsp;Address&nbsp;Manager](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html))|Instead of specifying multiple interdependent address ranges, specify one address space for IPAM to divide|
+|Private address allocation|~Fixed~<br/>Flexible|Instead of specifying multiple interdependent address ranges, specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
 |Lambda function tests|~In&nbsp;files~<br/>[Central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)|[Realistic, centrally&#8209;executed&nbsp;tests](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-invoke.html#using-sam-cli-remote-invoke-shareable) (see [shareable&nbsp;Lambda&nbsp;test](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/1edaa6a/cloudformation/kafka_consumer.yaml#L567-L598))|
 
 </details>
