@@ -103,6 +103,14 @@ locals {
   }
 }
 
+resource "aws_iam_role" "hello" {
+  for_each = local.roles
+
+  name = each.key
+
+  assume_role_policy = each.value["assume_role_policy_document"].json
+}
+
 resource "aws_iam_policy" "hello_custom" {
   for_each = local.create_custom_policies
 
@@ -118,14 +126,6 @@ data "aws_iam_policy" "hello_attach" {
   name = each.key
 
   depends_on = [aws_iam_policy.hello_custom] # Indirectly by name, for these!
-}
-
-resource "aws_iam_role" "hello" {
-  for_each = local.roles
-
-  name = each.key
-
-  assume_role_policy = each.value["assume_role_policy_document"].json
 }
 
 resource "aws_iam_role_policy_attachment" "hello" {
