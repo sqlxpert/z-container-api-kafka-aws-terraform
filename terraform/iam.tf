@@ -4,6 +4,53 @@
 
 
 
+# https://docs.aws.amazon.com/msk/latest/developerguide/create-iam-role.html
+# https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-actions-as-permissions
+# https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
+
+data "aws_iam_policy_document" "kafka_write" {
+  count = var.enable_kafka ? 1 : 0
+
+  statement {
+    actions = [
+      "kafka:GetBootstrapBrokers",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    actions = [
+      "kafka:DescribeClusterV2",
+      "kafka-cluster:Connect",
+      "kafka-cluster:DescribeCluster",
+    ]
+    resources = [aws_msk_serverless_cluster.hello_api[0].arn]
+  }
+  statement {
+    actions = [
+      "kafka-cluster:CreateTopic",
+      "kafka-cluster:DescribeTopic",
+      "kafka-cluster:WriteData",
+      "kafka-cluster:ReadData",
+    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
+      var.kafka_topic
+    ])]
+  }
+  statement {
+    actions = [
+      "kafka-cluster:DescribeGroup",
+      "kafka-cluster:AlterGroup",
+    ]
+    resources = [join("/", [
+      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+      "*"
+    ])]
+  }
+}
+
+
+
 data "aws_iam_policy_document" "hello_api_ecs_task_execution_assume_role" {
   statement {
     principals {
@@ -103,14 +150,6 @@ locals {
   }
 }
 
-resource "aws_iam_role" "hello" {
-  for_each = local.roles
-
-  name = each.key
-
-  assume_role_policy = each.value["assume_role_policy_document"].json
-}
-
 resource "aws_iam_policy" "hello_custom" {
   for_each = local.create_custom_policies
 
@@ -128,6 +167,14 @@ data "aws_iam_policy" "hello_attach" {
   depends_on = [aws_iam_policy.hello_custom] # Indirectly by name, for these!
 }
 
+resource "aws_iam_role" "hello" {
+  for_each = local.roles
+
+  name = each.key
+
+  assume_role_policy = each.value["assume_role_policy_document"].json
+}
+
 resource "aws_iam_role_policy_attachment" "hello" {
   for_each = local.role_policy_attachments_map
 
@@ -135,51 +182,4 @@ resource "aws_iam_role_policy_attachment" "hello" {
   policy_arn = data.aws_iam_policy.hello_attach[each.value["policy_name"]].arn
 
   depends_on = [aws_iam_role.hello]
-}
-
-
-
-# https://docs.aws.amazon.com/msk/latest/developerguide/create-iam-role.html
-# https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-actions-as-permissions
-# https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
-
-data "aws_iam_policy_document" "kafka_write" {
-  count = var.enable_kafka ? 1 : 0
-
-  statement {
-    actions = [
-      "kafka:GetBootstrapBrokers",
-    ]
-    resources = ["*"]
-  }
-  statement {
-    actions = [
-      "kafka:DescribeClusterV2",
-      "kafka-cluster:Connect",
-      "kafka-cluster:DescribeCluster",
-    ]
-    resources = [aws_msk_serverless_cluster.hello_api[0].arn]
-  }
-  statement {
-    actions = [
-      "kafka-cluster:CreateTopic",
-      "kafka-cluster:DescribeTopic",
-      "kafka-cluster:WriteData",
-      "kafka-cluster:ReadData",
-    ]
-    resources = [join("/", [
-      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
-      var.kafka_topic
-    ])]
-  }
-  statement {
-    actions = [
-      "kafka-cluster:DescribeGroup",
-      "kafka-cluster:AlterGroup",
-    ]
-    resources = [join("/", [
-      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
-      "*"
-    ])]
-  }
 }
