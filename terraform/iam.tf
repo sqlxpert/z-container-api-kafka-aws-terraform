@@ -38,40 +38,68 @@ data "aws_iam_policy_document" "hello_api_ecs_task_assume_role" {
 
 
 locals {
+  custom_policies = {
+
+    "kafka_write" = {
+      description     = "MSK hello_api cluster: create, write to '${var.kafka_topic}' topic"
+      policy_document = data.aws_iam_policy_document.kafka_write
+    }
+  }
+
   roles = {
 
     "hello_api_ecs_task_execution" = {
-      assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_execution_assume_role
-      aws_policy_names = [
+      assume_role_policy_document = data.aws_iam_policy_document.hello_api_ecs_task_execution_assume_role
+      attach_policies = [
         "AmazonECSTaskExecutionRolePolicy",
       ]
     }
 
     "hello_api_ecs_task" = {
-      assume_role_policy = data.aws_iam_policy_document.hello_api_ecs_task_assume_role
-      aws_policy_names = [
+      assume_role_policy_document = data.aws_iam_policy_document.hello_api_ecs_task_assume_role
+      attach_policies = [
+        "kafka_write",
       ]
     }
   }
 
-  aws_policy_names_set = toset(
-    flatten(values(local.roles)[*]["aws_policy_names"])
+  create_custom_policies = {
+    for policy_name, policy_detail in local.custom_policies :
+    policy_name => merge(
+      policy_detail,
+      { policy_document = one(policy_detail["policy_document"][*]) },
+    )
+    if length(policy_detail["policy_document"][*]) == 1
+    # https://developer.hashicorp.com/terraform/language/expressions/splat#single-values-as-lists
+    # Accept a static (type: object) or conditionally created (count = 1,
+    # producing type: list of objects) data.aws_iam_policy_document .
+  }
+
+  do_not_create_custom_policies_set = setsubtract(
+    toset(keys(local.custom_policies)),
+    toset(keys(local.create_custom_policies))
+  )
+
+  attach_role_policies_set = setsubtract(
+    toset(flatten(values(local.roles)[*]["attach_policies"])),
+    local.do_not_create_custom_policies_set
   )
 
   role_policy_attachments = flatten([
-    for role_name, role_detail
-    in local.roles : [
-      for aws_policy_name
-      in role_detail["aws_policy_names"] :
+    for role_name, role_detail in local.roles :
+    [
+      for policy_name in role_detail["attach_policies"] :
       {
-        "role_name"       = role_name
-        "aws_policy_name" = aws_policy_name
+        "role_name"   = role_name
+        "policy_name" = policy_name
       }
-  ]])
+      if contains(local.attach_role_policies_set, policy_name)
+    ]
+  ])
 
   role_policy_attachments_map = {
     for attach in local.role_policy_attachments :
-    join(":", [attach["role_name"], attach["aws_policy_name"]]) => attach
+    join(":", [attach["role_name"], attach["policy_name"]]) => attach
   }
 }
 
@@ -80,24 +108,33 @@ resource "aws_iam_role" "hello" {
 
   name = each.key
 
-  assume_role_policy = each.value.assume_role_policy.json
+  assume_role_policy = each.value["assume_role_policy_document"].json
 }
 
-data "aws_iam_policy" "aws" {
-  for_each = local.aws_policy_names_set
+resource "aws_iam_policy" "hello_custom" {
+  for_each = local.create_custom_policies
+
+  name        = each.key
+  description = each.value["description"]
+
+  policy = each.value["policy_document"].json
+}
+
+data "aws_iam_policy" "hello_attach" {
+  for_each = local.attach_role_policies_set
 
   name = each.key
+
+  depends_on = [aws_iam_policy.hello_custom] # Indirectly by name, for these!
 }
 
-resource "aws_iam_role_policy_attachment" "hello_aws" {
+resource "aws_iam_role_policy_attachment" "hello" {
   for_each = local.role_policy_attachments_map
 
   role       = each.value["role_name"]
-  policy_arn = data.aws_iam_policy.aws[each.value["aws_policy_name"]].arn
+  policy_arn = data.aws_iam_policy.hello_attach[each.value["policy_name"]].arn
 
-  depends_on = [
-    aws_iam_role.hello,
-  ]
+  depends_on = [aws_iam_role.hello]
 }
 
 
@@ -145,20 +182,4 @@ data "aws_iam_policy_document" "kafka_write" {
       "*"
     ])]
   }
-}
-
-resource "aws_iam_policy" "kafka_write" {
-  count = var.enable_kafka ? 1 : 0
-
-  name        = "kafka_write"
-  description = "MSK hello_api cluster: create, write to '{$var.kafka_topic}' topic"
-
-  policy = data.aws_iam_policy_document.kafka_write[0].json
-}
-
-resource "aws_iam_role_policy_attachment" "hello_api_ecs_task_kafka_write" {
-  count = var.enable_kafka ? 1 : 0
-
-  role       = aws_iam_role.hello["hello_api_ecs_task"].name
-  policy_arn = aws_iam_policy.kafka_write[0].arn
 }
