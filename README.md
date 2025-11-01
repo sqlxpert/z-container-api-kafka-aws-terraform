@@ -1,26 +1,60 @@
-# Containerized Python API, Kafka Cluster, Lambda Consumer
+# Containerized Python API, Kafka, AWS Lambda Consumer
 
-Hello!
+Hello! This is a high-quality containerized Python API &rarr; managed Kafka
+cluster &rarr; AWS Lambda consumer system, provisioned with Terraform (and
+indirect CloudFormation, for the consumer stack). I hope you will be able to
+use it and adapt it for your own projects, under the terms of the license.
 
-This is a containerized Python API &rarr; managed Kafka cluster &rarr; AWS
-Lambda consumer system, provisioned with Terraform and CloudFormation. I wrote
-it in September,&nbsp;2025, in response to a take-home technical exercise.
+## Innovations and Best Practices
 
-Freed from the yoke of an uninsightful specification written by a non-AWS-savvy
-organization, I enhanced the project's cost profile and network security in
-October,&nbsp;2025.
+- Small image
+- Secure container
+- Secure private network
+- Low-code
+- Low-cost
+- Ready for continuous-integration/continuous-deployment
 
-Have fun experimenting with it, see if you can re-use parts of it under license
-in your own projects, and feel free to send comments and questions!
+<details>
+  <summary>Table of innovations and best practices...</summary>
+
+<br/>
+
+|<br/>&check; Quality|~Typical&nbsp;approach~<br/>My&nbsp;work|<br/>Advantage|
+|:---|:---|:---|
+|<br/>**&check; Small image**|||
+|Package cache|~None~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
+|Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
+|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker multi-stage build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
+|<br/>**&check; Secure container**|||
+|Base image|~Docker&nbsp;Community&nbsp;Python~<br/>Amazon&nbsp;Linux|Fewer vulnerabilities; frequent updates, _from AWS staff_; [deterministic&nbsp;OS&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)|
+|Image build platform|~Local computer~<br/>[AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)&nbsp;or&nbsp;EC2|Controlled, auditable environment; low malware risk|
+|Non-root user|~Maybe?~<br/>Yes|Less access if main process is compromised|
+|<br/>**&check; Secure private network**|||
+|Internet from private subnets|~NAT&nbsp;Gateway~<br/>No|Lower data exfiltration risk|
+|AWS service endpoints|~Public~<br/>Private|Traffic never leaves private network|
+|Security group rule scope|~Ranges&nbsp;of&nbsp;_numbered_&nbsp;addresses~<br/>Named&nbsp;security&nbsp;groups|Only pairs of known resources can communicate|
+|<br/>**&check; Low-code**|||
+|API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
+|Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
+|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; re-usable code accepts JSON input (I re-used a CloudFormation template from my other open-source projects, with small changes to the mapping and the Python code)|
+|<br/>**&check; Low-cost**|||
+|Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts&nbsp;are&nbsp;higher](https://aws.amazon.com/ec2/spot/instance-advisor) than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;savings](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) are comparable|
+|CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
+|Expensive resources|~Always&nbsp;on~<br/>Conditional|Develop and test at the lowest AWS cost|
+|<br/>**&check; CI/CD-ready**|||
+|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions|
+|Image build software platform|~MacOS~<br/>Amazon&nbsp;Linux|Ready for centralized building|
+|Private address allocation|~Fixed~<br/>Flexible ([AWS&nbsp;IP&nbsp;Address&nbsp;Manager](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html))|Instead of specifying multiple interdependent address ranges, specify one address space for IPAM to divide|
+|Lambda function tests|~In&nbsp;files~<br/>[Central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)|[Realistic, centrally&#8209;executed&nbsp;tests](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-invoke.html#using-sam-cli-remote-invoke-shareable) (see [shareable&nbsp;Lambda&nbsp;test](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/1edaa6a/cloudformation/kafka_consumer.yaml#L567-L598))|
+
+</details>
 
 Jump to:
-[Commentary](#commentary)
-&bull;
 [Recommendations](#recommendations)
 &bull;
 [Licenses](#licenses)
 
-## Getting Started
+## Installation
 
  1. Choose between
     [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
@@ -37,19 +71,19 @@ Jump to:
 
       - Prepare for a cross-platform container image build. CloudShell seems to
         provide Intel CPUs. The following instructions are from
-        [Multi-platform builds](https://docs.docker.com/build/building/multi-platform/#prerequisites)
+        "[Multi-platform builds](https://docs.docker.com/build/building/multi-platform/#prerequisites)"
         in the Docker Build manual.
 
         ```shell
-        sudo docker buildx create --name container-builder --driver docker-container --bootstrap --use
+        sudo docker buildx create --name 'container-builder' --driver 'docker-container' --bootstrap --use
         ```
 
         ```shell
-        sudo docker run --privileged --rm tonistiigi/binfmt --install all
+        sudo docker run --privileged --rm 'tonistiigi/binfmt' --install all
         ```
 
       - Review the
-        ([Terraform S3 backend documentation](https://developer.hashicorp.com/terraform/language/backend/s3)
+        [Terraform S3 backend documentation](https://developer.hashicorp.com/terraform/language/backend/s3)
         and
         [create an S3 bucket](https://console.aws.amazon.com/s3/bucket/create?bucketType=general)
         to store Terraform state.
@@ -136,13 +170,15 @@ Jump to:
 
     ```
 
-    _Optional:_ To save a little money while building the Docker container
-    image, you can set `create_vpc_endpoints_and_load_balancer = false`&nbsp;.
+    _Optional:_ To save money while building the Docker container image, you
+    can set `hello_api_aws_ecs_service_desired_count_tasks = 0` and
+    `create_vpc_endpoints_and_load_balancer = false`&nbsp;.
 
- 4. In CloudShell (optional if you chose EC2),  create `terraform_override.tf`
-    and configure the S3 backend.
+ 4. In CloudShell (optional if you chose EC2), create an override file to
+    configure your Terraform S3 backend.
 
-    ```terraform
+    ```shell
+    cat > terraform_override.tf << 'EOF'
     terraform {
       backend "s3" {
         insecure = false
@@ -154,6 +190,7 @@ Jump to:
         use_lockfile = true # No more DynamoDB; now S3-native!
       }
     }
+    EOF
     ```
 
  5. Initialize Terraform and create the AWS infrastructure. There's no need for
@@ -170,20 +207,16 @@ Jump to:
     ```
 
     <details>
-      <summary>About the two-stage process...</summary>
+      <summary>About this two-stage process...</summary>
 
     <br/>
 
     CloudPosse's otherwise excellent
     [dynamic-subnets](https://registry.terraform.io/modules/cloudposse/dynamic-subnets/aws/latest)
-    module isn't dynamic enough to work with
-    [AWS IP Address Manager
-    (IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html),
-    so you have to allocate the subnet IP address ranges beforehand. I like
-    IPAM because it does the work of dividing up one private IP address space.
-    Specifying multiple, interdependent IP address ranges would produce a
-    brittle configuration rather than a general-purpose, reusable
-    infrastructure template.
+    module isn't dynamic enough to co-operate with
+    [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html),
+    so you have to let IPAM finalize subnet IP address range allocations
+    beforehand.
 
     </details>
 
@@ -240,24 +273,23 @@ Jump to:
       Terraform, running `terraform apply`&nbsp;, and re-setting the
       environment variables.
 
-      Then, to update the image, run `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
+      Then, to re-build the image, run `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
       (choose an appropriate new version number, taking
-      [semantic versioning](https://semver.org/#semantic-versioning-specification-semver)
-      into account), re-build the image, push it up to the repository, set
+      [semantic&nbsp;versioning](https://semver.org/#semantic-versioning-specification-semver)
+      into account) in the shell, repeat the build and push commands, set
       `hello_api_aws_ecr_image_tag = "1.0.1"` (for example) in Terraform, and
-      run `terraform apply` again.
+      run `terraform apply` one more time.
 
     </details>
 
- 7. _If_ you changed
-    `create_vpc_endpoints_and_load_balancer` in Step&nbsp;3, change the value
-    back to `true` and run `terraform apply`&nbsp;.
+ 7. _If_ you changed Terraform variables at the end of Step&nbsp;3, revert the
+    changes and run `terraform apply`&nbsp;.
 
  8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
 
     <details>
-      <summary>Container deployment time and task count...</summary>
+      <summary>Container deployment delay...</summary>
 
     <br/>
 
@@ -265,12 +297,6 @@ Jump to:
       container image. Relax, and let it happen. If you are impatient, or if
       there is a problem, you can navigate to the `hello_api` service, open the
       orange "Update service" pop-up menu, and select "Force new deployment".
-
-    - You can reduce the `hello_api_aws_ecs_service_desired_count_tasks`
-      variable in Terraform, to a minimum of 0&nbsp;tasks (to eliminate ECS
-      Fargate compute costs while you are experimenting). To demonstrate
-      redundancy in 3&nbsp;availability zones, increase the value to
-      3&nbsp;tasks or more.
 
     </details>
 
@@ -296,7 +322,7 @@ Jump to:
     Terraform output.
 
     <details>
-      <summary>About HTTPS redirection and certificates...</summary>
+      <summary>About redirection to HTTPS, and certificates...</summary>
 
     <br/>
 
@@ -353,14 +379,12 @@ Jump to:
     `HelloApiKafkaConsumer` CloudFormation stack is in `ROLLBACK_COMPLETE`
     status, delete it, then run `terraform apply` again.
 
-    <br/>
-
     </details>
 
-12. Access the `http://DOMAIN/current_time?name=Paul` path several times
-    (adjust the name as you wish). The first use of this path prompts creation
-    of the `events` Kafka topic. From now on, use of this path (this path only)
-    triggers a message to the `events` topic.
+12. Access the `http://DOMAIN/current_time?name=Paul` method several times
+    (adjust the name as you wish). The first use of this method prompts
+    creation of the `events` Kafka topic. From now on, use of this method (this
+    method only) will send a message to the `events` Kafka topic.
 
     The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
     reads the topic and triggers the consumer Lambda function, which logs
@@ -372,7 +396,7 @@ Jump to:
     `hello_api_aws_ecs_service_desired_count_tasks` and
     `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
     values if you'd like to continue experimenting. When you are done, delete
-    all resources; even the minimum configuration carries a cost.
+    all resources; the minimum configuration carries a cost.
 
     ```shell
     cd ../terraform
@@ -391,61 +415,41 @@ Jump to:
     - Expect an error message about retiring KMS encryption key grants
       (harmless, in this case).
 
-    - If you must interrupt and resume the `terraform apply -destroy` process,
-      a bug in CloudPosse's `dynamic-subnets` module can cause a "value
-      depends on resource attributes that cannot be determined until apply"
-      error. For a work-around, edit the cached module file indicated in the
-      error message. Comment out the indicated line and force
-      `count = 0`&nbsp;. Be sure to revert this temporary patch later.
+    - If you cancel and re-run `terraform apply -destroy`&nbsp;, a bug in
+      CloudPosse's `dynamic-subnets` module might cause a "value depends on
+      resource attributes that cannot be determined until apply" error. For a
+      work-around, edit the cached module file indicated in the error message.
+      Comment out the indicated line and force `count = 0`&nbsp;. Be sure to
+      revert this temporary patch later.
 
     </details>
 
-## Commentary
+## Comments
 
-### Statement on AI, LLMs and Code Generation
+### Artificial Intelligence and Large Language Models (LLMs)
 
-This is my own work, produced _without_ the use of artificial intelligence /
-large language model code generation. Code from other sources is acknowledged.
+This is my own original work, produced _without_ the use of artificial
+intelligence (AI) and large language model (LLM) code generation. Code from
+other sources is acknowledged.
 
-### Design Decisions
+### Long Option Names
 
-This is a comprehensive, working system. I made some executive decisions:
+I write long option names in my instructions so that other people don't have to
+look up unfamiliar single-letter options &mdash; assuming they can _find_ them!
 
-- **AWS CloudShell or EC2**
-  Local building and testing of container images meant to be deployed in the
-  cloud, and local execution of `terraform apply`  to create cloud resources,
-  introduce variability and security risk without much benefit. Instead, I use
-  the same Linux distribution (Amazon Linux 2023) that I selected for my
-  container image, either on an EC2 instance or in
-  [AWS CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html).
+Here's an example that shows why I go to the trouble, even at the expense of
+being laughed at by macho Linux users. I started using
+[UNICOS](https://en.wikipedia.org/wiki/UNICOS)
+in 1991, so it's not for lack of experience.
 
-- **Lambda Test Event**
-  [Shareable Lambda function test events](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
-  offer a great way to bundle test events in infrastructure-as-code templates.
-  Users can trigger realistic tests in a development AWS account, using the AWS
-  Console, the AWS&nbsp;CLI, or a test program. See the
-  [Lambda test event source](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/d98c1cc/cloudformation/kafka_consumer.yaml#L567-L598).
+> Search for the literal text `-t` in
+[docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
+using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
+2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
 
-- **CloudFormation for the Kafka Consumer**
-  I defined the Kafka consumer in CloudFormation, called from Terraform,
-  because I had complete and thoroughly-tested CloudFormation templates for
-  Lambda functions and their dependencies, from my other projects. I speak both
-  Terraform and CloudFormation, and each approach to infrastructure-as-code has
-  its advantages. Here, re-using CloudFormation code saved me time. It also
-  happens to establish a clean, modular separation between the Kafka producer
-  and the consumer. The consumer only needs to know the MSK cluster ARN, the
-  topic, and private subnet IDs and a security group ID for the VPC Lambda
-  function.
-
-- **PrivateLink**
-  NAT Gateway is a very expensive AWS service, and from a network security
-  perspective, it's better to keep as much network traffic private as possible.
-  Accordingly, I define VPC endpoints for all necessary AWS services and leave
-  the NAT Gateway off by default. I go a bit beyond AWS's recommendations for
-  the endpoint security groups, using strict reciprocal pairs to determine
-  which resources can access which AWS service endpoints, instead of opening
-  them to entire subnets, let alone to the entire VPC. I don't use endpoint
-  IAM policies, but could add them for even finer-grained control.
+Where available, full-text (that is, not strictly literal) search engines
+can't make sense of a 1-letter search term and are also likely to ignore a
+2-character term as a "stop-word" that's too short to search for.
 
 ### Recommendations
 
@@ -457,56 +461,22 @@ business...
 - understands (or can learn), and
 - can maintain.
 
-Having worked for startups since 2013, I always recommend _focusing_
-engineering effort during a company's formative years. It is not possible to
-do everything, let alone to be good at everything. Managed services,
-serverless technologies, and low-code solutions free engineers to focus on a
-startup's core product. My recommendations assume that a startup has chosen
-AWS as its cloud provider. (Multi-cloud support is not the core business of
-most startups.)
+Having worked for startups since 2013, I always recommend focusing software
+engineering effort. It is not possible to do everything, let alone to be good
+at everything. Managed services, serverless technology, and low-code
+architecture free software engineers to _focus on the core product, that is, on
+what the company actually sells_. Avoid complex infrastructure and tooling
+unless it offers a unique, tangible, and substantial benefit. Simplicity pays!
 
-|For this feature|The exercise required|I recommend|Because|
-|:---|:---|:---|:---|
-|API internals|A Docker container|AWS&nbsp;Lambda functions|There is much less infrastructure to specify and maintain, with Lambda. Source code for Lambda functions of reasonable length can be specified in-line, eliminating the need for a packaging pipeline.|
-|Container orchestration|ECS&nbsp;Fargate|ECS&nbsp;Fargate|When containers are truly necessary, ECS requires much less effort than EKS, and Fargate, less than EC2.|
-|API presentation|(No requirement)|API&nbsp;Gateway|API&nbsp;Gateway makes it easy to implement rate-limiting/throttling. The service integrates directly with other relevant AWS services, including CloudWatch for logging and monitoring, and Web Application Firewall (WAF) for protection from distributed denial of service (DDOS) attacks.|
-|Data streaming|Apache&nbsp;Kafka, via MSK|AWS Kinesis|Like Kinesis, the MSK _Serverless_ variant places the focus on usage rather than on cluster specification and operation. Still, everything requires extra effort in Kafka. The boundary between infrastructure and data is unclear. Are topics to be managed as infrastructure, as application data, or as both? I find the _need_ for "[Automate topic provisioning and configuration using Terraform](https://aws.amazon.com/blogs/big-data/automate-topic-provisioning-and-configuration-using-terraform-with-amazon-msk/)" ridiculous. Should we depend on a module published and maintained by one person, and how do we assure its security, today and in the future? Should Terraform have permission to authenticate to Kafka and manipulate data?<br/><br/>The [MSK authentication source code provided by AWS](https://github.com/aws/aws-msk-iam-sasl-signer-python/issues) has 11 active issues, some open for more than one year. The `kafka-python` [`KafkaProducer.send`](https://kafka-python.readthedocs.io/en/master/apidoc/KafkaProducer.html#kafka.KafkaProducer.send) documentation mentions the return type but does not describe the contents; you have to [read the `kafka-python` source code](https://github.com/dpkp/kafka-python/blob/9227674/kafka/producer/future.py#L31-L74) yourself for that. The software has inconsistencies, such as using milliseconds for `KafkaProducer(request_timeout_ms)` but seconds for `KafkaProducer.send().get(timeout)`&nbsp;. Kafka and its software ecosystem is a rabbit warren of unnecessary complexity. A startup would be fine with SQS, or Kinesis for very high data volumes and/or for replayable streams, unless Kafka compatibility were part of the core business.|
-|Consumer|An AWS&nbsp;Lambda function|An AWS&nbsp;Lambda function|(As above)|
-|Logging|CloudWatch Logs|CloudWatch Logs|CloudWatch Logs is integrated with most AWS services. It requires less software installation effort (agents are included in AWS images) and much less configuration effort than alternatives like DataDog. Caution: CloudWatch is particularly expensive, but other centralized logging and monitoring products also become expensive at scale.|
-|Infrastructure as code (for _AWS_ resources)|Terraform|CloudFormation|CloudFormation:<ul><li>doesn't require the installation and constant upgrading of extra software;</li><li>steers users to simple, AWS-idiomatic resource definitions;</li><li>is covered, at no extra charge, by the existing AWS Support contract; and</li><li>supports creating multiple stacks from the same template, thanks to automatic resource naming.</li></ul>Note, in [Getting Started](#getting-started), the relative difficulty of bootstrapping Terraform. I could have furnished a turn-key CloudFormation template, but before you can use Terraform you have to have environment in which to run it, you have to install it, and you have to set up a backend to store state information. In the short time that this project was under development, I had to code my own VPC endpoints because CloudPosse's [vpc-endpoints](https://registry.terraform.io/modules/cloudposse/vpc/aws/latest/submodules/vpc-endpoints) sub-module was incompatible with the current Terraform AWS provider, and I couldn't downgrade _that_ and break everything else. I also documented a case where I couldn't use a basic AWS IPAM feature: [resource planning pools are not supported by the Terraform AWS provider](https://github.com/hashicorp/terraform-provider-aws/issues/34615).<br/><br/>On a daily basis, and at scale, these foibles accumulate; the effort wasted diminishes the benefits that people ascribed to Terraform. (My advice is specifically for managing _AWS_ resources. Use whatever IaC tool you like for non-AWS stuff, prioritizing the many, close relationships between components created with the AWS API, over the few, weak dependencies between AWS- and non-AWS components.)|
+Security is easier and cheaper to incorporate at the start than to graft on
+after the architecture has been finalized, the infrastructure has been
+templated and created, and the executable code has been written and deployed.
 
-In short, added complexity in any piece of software, any framework, any tool
-had better come with a unique, tangible, and substantial benefit. Otherwise, a
-resource-constrained startup is better off choosing the simpler alternative.
-
-## Parking Lot
-
-
-<details>
-  <summary>Why these instructions include long option names...</summary>
-
-<br/>
-
-Make fun of me all you want, but I write long option names so that other
-people don't have to look up unfamiliar single-letter options &mdash; assuming
-they can _find_ them!
-
-Here's an example that shows why I go to the trouble, even at the expense of
-being laughed at by macho Linux users. I started using UNICOS in 1991, so it's
-not for lack of experience.
-
-Search for the literal text `-t` in
-[docs.docker.com/reference/cli/docker/buildx/build](https://docs.docker.com/reference/cli/docker/buildx/build/)&nbsp;,
-using Command-F, Control-F, `/`&nbsp;, or `grep`&nbsp;. Only
-2&nbsp;of&nbsp;41&nbsp;occurrences of `-t` are relevant!
-
-Where available, full-text (that is, not strictly literal) search engines
-can't make sense of a 1-letter search term and are also likely to ignore a
-2-character term as a "stop-word" that's too short to search for.
-
-</details>
-
-
+Specialized knowledge of the chosen cloud provider is indispensable. I call it
+"idiomatic" knowledge, a good part of which is awareness of the _range of
+options_ supported by your cloud provider. Building generically would mean
+giving up some performance, some security, and some cloud cost savings.
+Optimizing later is difficult. "Lean to steer the ship you're on."
 
 ## Licenses
 
