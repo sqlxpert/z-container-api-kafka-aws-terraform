@@ -2,12 +2,6 @@
 # github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
-locals {
-  hello_api_vpc_netmask_length        = 21
-  hello_api_vpc_subnet_netmask_length = 24
-  hello_api_vpc_private_subnet_count  = 3
-}
-
 
 
 resource "aws_vpc_ipam" "hello_api_vpc" {
@@ -27,7 +21,7 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc" {
 resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
 
-  cidr = "10.11.0.0/${local.hello_api_vpc_netmask_length}"
+  cidr = "${var.vpc_ipv4_cidr_block}/${var.vpc_netmask_length}"
 
   # Normally this would be a resource planning pool derived from a VPC, but
   # as of 2025-09, the Terraform AWS provider does not support SourceResource .
@@ -59,7 +53,7 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc_subnets" {
   address_family = "ipv4"
 
   auto_import                       = false
-  allocation_default_netmask_length = local.hello_api_vpc_subnet_netmask_length
+  allocation_default_netmask_length = var.vpc_subnet_netmask_length
 }
 resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
@@ -67,7 +61,7 @@ resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
 }
 
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
-  count = local.hello_api_vpc_private_subnet_count
+  count = var.vpc_private_subnet_count
 
   depends_on = [
     aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
@@ -82,7 +76,7 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
 }
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_public_subnets" {
-  count = local.hello_api_vpc_private_subnet_count
+  count = var.vpc_private_subnet_count
 
   depends_on = [
     aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets

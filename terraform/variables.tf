@@ -9,6 +9,34 @@ variable "aws_region_main" {
   default = ""
 }
 
+variable "vpc_ipv4_cidr_block" {
+  type       = string
+  descripton = "The IPv4 address range for the new Virtual Private Cloud, in CIDR notation"
+
+  default = "10.11.0.0"
+}
+
+variable "vpc_netmask_length" {
+  type        = number
+  description = "The netmask length for the new VPC. This determines the address space available for subnets."
+
+  default = 21
+}
+
+variable "vpc_subnet_netmask_length" {
+  type        = number
+  description = "The netmask length for each subnet of the new VPC. This determines the address space available for resources within a subnet."
+
+  default = 24
+}
+
+variable "vpc_private_subnet_count" {
+  type        = number
+  description = "The number of private subnets in the new VPC. An equal number of public subnets will also be created."
+
+  default = 3
+}
+
 variable "hello_api_aws_ecr_image_tag" {
   type        = string
   description = "Version tag of hello_api image in Elastic Container Registry repository"
