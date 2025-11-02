@@ -105,7 +105,7 @@ module "hello_api_vpc_subnets" {
     public  = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets[*].cidr
   }]
 
-  max_subnet_count = local.hello_api_vpc_private_subnet_count
+  max_subnet_count = var.vpc_private_subnet_count
   # Maximum subnets per type (public or private), not overall!
 
   public_route_table_enabled            = true
