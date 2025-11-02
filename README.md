@@ -22,7 +22,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>&check; Quality|~Typical&nbsp;approach~<br/>My&nbsp;work|<br/>Advantage|
 |:---|:---|:---|
 |<br/>**&check; Small image**|||
-|Package and module caches|~Cleared or disabled~<br/>Via [Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
+|Package and module caches|~Cleared or disabled~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
 |Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
 |Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker&nbsp;multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
 |<br/>**&check; Secure container**|||
@@ -36,7 +36,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Low-code**|||
 |API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
 |Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
-|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; code accepts JSON input (I re-used a CloudFormation template from my other projects!)|
+|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) handles Kafka; code receives JSON input (I re-used an SQS consumer CloudFormation template from my other projects!)|
 |<br/>**&check; Low-cost**|||
 |Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts](https://aws.amazon.com/ec2/spot/instance-advisor) are higher than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;pricing](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) works similarly|
 |CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
@@ -76,10 +76,12 @@ Jump to:
 
         ```shell
         sudo docker buildx create --name 'container-builder' --driver 'docker-container' --bootstrap --use
+
         ```
 
         ```shell
         sudo docker run --privileged --rm 'tonistiigi/binfmt' --install all
+
         ```
 
       - Review the
@@ -152,26 +154,40 @@ Jump to:
 
     ```shell
     sudo dnf --assumeyes install 'dnf-command(config-manager)'
+
     ```
 
     ```shell
     sudo dnf config-manager --add-repo 'https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo'
     # sudo dnf --assumeyes install terraform-1.10.0-1
     sudo dnf --assumeyes install terraform
+
     ```
 
  3. Clone this repository and create `terraform.tfvars` to customize variables.
 
     ```shell
-    cd ~
-    git clone 'https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws.git'
-    cd docker-python-openapi-kafka-terraform-cloudformation-aws/terraform
+    git clone 'https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws.git' ~/docker-python-openapi-kafka
+    cd ~/docker-python-openapi-kafka/terraform
     touch terraform.tfvars
 
     ```
 
-    _Optional:_ To save money while building the Docker container image, you
-    can set `hello_api_aws_ecs_service_desired_count_tasks = 0` and
+    The following will generate a `terraform.tfvars` skeleton if you have
+    up-to-date GNU (not MacOS default!) versions of `grep` and `sed`&nbsp;:
+
+    ```shell
+    grep --extended-regexp \
+         --regexp='^(variable "|  description =|  default =)' variables.tf \
+      | sed --regexp-extended \
+            --expression='s/^variable "(.+)" \{$/\n\n# \1 =/' \
+            --expression='s/^  description = "(.+)"$/#\n# \1/' \
+            --expression='s/^  default = (.+)$/#\n# Default: \1/'
+
+    ```
+
+    _Optional:_ To save money while building the Docker container image, set
+    `hello_api_aws_ecs_service_desired_count_tasks = 0` and
     `create_vpc_endpoints_and_load_balancer = false`&nbsp;.
 
  4. In CloudShell (optional if you chose EC2), create an override file to
@@ -191,6 +207,7 @@ Jump to:
       }
     }
     EOF
+
     ```
 
  5. Initialize Terraform and create the AWS infrastructure. There's no need for
@@ -200,10 +217,12 @@ Jump to:
 
     ```shell
     terraform init
+
     ```
 
     ```shell
     terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+
     ```
 
     <details>
@@ -222,6 +241,7 @@ Jump to:
 
     ```shell
     terraform apply
+
     ```
 
     <details>
@@ -257,10 +277,12 @@ Jump to:
 
     ```shell
     sudo docker buildx build --build-arg AMAZON_LINUX_BASE_VERSION="${AMAZON_LINUX_BASE_VERSION}" --build-arg AMAZON_LINUX_BASE_DIGEST="${AMAZON_LINUX_BASE_DIGEST}" --platform='linux/arm64' --tag "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}" --output 'type=docker' .
+
     ```
 
     ```shell
     sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
+
     ```
 
     <details>
@@ -304,22 +326,20 @@ Jump to:
 
     ```shell
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
+
     ```
 
     Try the different URLs using your Web browser or
     `curl --location --insecure`
     (these options allow redirection and self-signed TLS certificates).
 
-    |URL|Result Expected|
+    |Method|Result Expected|
     |:---|:---|
-    |`http://DOMAIN/healthcheck`|Empty response|
-    |`http://DOMAIN/hello`|Fixed greeting, in a JSON object|
-    |`http://DOMAIN/current_time?name=Paul`|Reflected greeting and timestamp, in a JSON object|
-    |`http://DOMAIN/current_time?name=;echo`|HTTP `400` "bad request" error;<br/>Demonstrates protection from command injection|
-    |`http://DOMAIN/error`|HTTP `404` "not found" error|
-
-    ...where _DOMAIN_ is the value of the `hello_api_load_balander_domain_name`
-    Terraform output.
+    |`/healthcheck`|Empty response|
+    |`/hello`|Fixed greeting, in a JSON object|
+    |`/current_time?name=Paul`|Reflected greeting and timestamp, in a JSON object|
+    |`/current_time?name=;echo`|HTTP `400` "bad request" error;<br/>Demonstrates protection from command injection|
+    |`/error`|HTTP `404` "not found" error|
 
     <details>
       <summary>About redirection to HTTPS, and certificates...</summary>
@@ -381,14 +401,14 @@ Jump to:
 
     </details>
 
-12. Access the `http://DOMAIN/current_time?name=Paul` method several times
-    (adjust the name as you wish). The first use of this method prompts
-    creation of the `events` Kafka topic. From now on, use of this method (this
-    method only) will send a message to the `events` Kafka topic.
+12. Access the `/current_time?name=Paul` method several times (adjust the name
+    as you wish). The first use of this method prompts creation of the `events`
+    Kafka topic. From now on, use of this method (not the others) will send a
+    message to the `events` Kafka topic.
 
     The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
-    reads the topic and triggers the consumer Lambda function, which logs
-    decoded Kafka messages to the
+    reads from the Kafka topic and triggers the consumer Lambda function, which
+    logs decoded Kafka messages to the
     [HelloApiKafkaConsumer](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
     CloudWatch log group.
 
