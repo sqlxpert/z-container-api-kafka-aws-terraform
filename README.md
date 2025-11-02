@@ -176,14 +176,14 @@ Jump to:
     <details>
       <summary>Generate a terraform.tfvars skeleton...</summary>
 
+    <br/>
+
     ```shell
-    # Requires up-to-date GNU (not MacOS default!) grep and sed
-    grep --extended-regexp \
-         --regexp='^(variable "|  (description|default) =)' variables.tf \
-      | sed --regexp-extended \
-            --expression='s/^variable "(.+)" \{$/\n\n# \1 =/' \
-            --expression='s/^  description = "(.+)"$/#\n# \1/' \
-            --expression='s/^  default = (.+)$/#\n# Default: \1/'
+    # Requires an up-to-date GNU sed (not the MacOS default!)
+    sed --regexp-extended --silent  \
+        --expression='s/^variable "(.+)" \{$/\n\n# \1 =/p' \
+        --expression='s/^  description = "(.+)"$/#\n# \1/p' \
+        --expression='s/^  default = (.+)$/#\n# Default: \1/p' variables.tf
 
     ```
 
