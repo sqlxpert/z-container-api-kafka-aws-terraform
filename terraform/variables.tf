@@ -9,9 +9,9 @@ variable "aws_region_main" {
   default = ""
 }
 
-variable "vpc_ipv4_cidr_block" {
+variable "vpc_ipv4_cidr_block_start" {
   type        = string
-  description = "The IPv4 address range for the new Virtual Private Cloud, in CIDR notation"
+  description = "The starting IPv4 address for the new Virtual Private Cloud"
 
   default = "10.11.0.0"
 }

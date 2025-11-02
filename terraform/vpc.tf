@@ -21,7 +21,7 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc" {
 resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
 
-  cidr = "${var.vpc_ipv4_cidr_block}/${var.vpc_netmask_length}"
+  cidr = "${var.vpc_ipv4_cidr_block_start}/${var.vpc_netmask_length}"
 
   # Normally this would be a resource planning pool derived from a VPC, but
   # as of 2025-09, the Terraform AWS provider does not support SourceResource .
