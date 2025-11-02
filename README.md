@@ -173,18 +173,21 @@ Jump to:
 
     ```
 
-    The following will generate a `terraform.tfvars` skeleton if you have
-    up-to-date GNU (not MacOS default!) versions of `grep` and `sed`&nbsp;:
+    <details>
+      <summary>Generate a terraform.tfvars skeleton...</summary>
 
     ```shell
+    # Requires up-to-date GNU (not MacOS default!) grep and sed
     grep --extended-regexp \
-         --regexp='^(variable "|  description =|  default =)' variables.tf \
+         --regexp='^(variable "|  (description|default) =)' variables.tf \
       | sed --regexp-extended \
             --expression='s/^variable "(.+)" \{$/\n\n# \1 =/' \
             --expression='s/^  description = "(.+)"$/#\n# \1/' \
             --expression='s/^  default = (.+)$/#\n# Default: \1/'
 
     ```
+
+    </details>
 
     _Optional:_ To save money while building the Docker container image, set
     `hello_api_aws_ecs_service_desired_count_tasks = 0` and
