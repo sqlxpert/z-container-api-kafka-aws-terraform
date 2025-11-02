@@ -15,13 +15,22 @@ data "aws_iam_policy_document" "hello_api_ecs_task" {
 
   statement {
     actions = [
-      "logs:CreateLogStream",
       "logs:DescribeLogStreams",
+    ]
+    resources = [
+      aws_cloudwatch_log_group.hello_api_ecs_task.arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
     resources = [
       join(":", [
-        replace(aws_cloudwatch_log_group.hello_api_ecs_task.arn, "/log-group:", "/log-stream:"),
+        aws_cloudwatch_log_group.hello_api_ecs_task.arn,
+        "log-stream",
         "*"
       ])
     ]
@@ -53,13 +62,22 @@ data "aws_iam_policy_document" "hello_api_ecs_task_ecs_exec" {
 
   statement {
     actions = [
-      "logs:CreateLogStream",
       "logs:DescribeLogStreams",
+    ]
+    resources = [
+      aws_cloudwatch_log_group.hello_api_ecs_cluster.arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
     resources = [
       join(":", [
-        replace(aws_cloudwatch_log_group.hello_api_ecs_cluster.arn, "/log-group:", "/log-stream:"),
+        aws_cloudwatch_log_group.hello_api_ecs_cluster.arn,
+        "log-stream",
         "*"
       ])
     ]

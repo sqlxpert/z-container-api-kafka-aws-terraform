@@ -20,7 +20,7 @@ variable "enable_ecs_exec" {
   type        = bool
   description = "Whether to enable ECS Exec, which allows you to run commands remotely or open an interactive shell inside a container task, using AWS Systems Manager. See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html ."
 
-  default = true
+  default = false
 }
 
 variable "enable_kafka" {

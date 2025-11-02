@@ -24,11 +24,7 @@ resource "aws_ecs_cluster" "hello_api" {
 
     # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-logging
     execute_command_configuration {
-      logging = "OVERRIDE"
-      log_configuration {
-        cloud_watch_encryption_enabled = false
-        cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello_api_ecs_cluster.name
-      }
+      logging = "DEFAULT"
     }
   }
 }
@@ -126,7 +122,7 @@ resource "aws_ecs_task_definition" "hello_api" {
 
           awslogs-create-group  = "true" # String (!), and "false" not allowed
           awslogs-group         = aws_cloudwatch_log_group.hello_api_ecs_task.name
-          awslogs-stream-prefix = "awslogs-stream-prefix"
+          awslogs-stream-prefix = "hello_api"
 
           mode            = "non-blocking"
           max-buffer-size = "10m"
