@@ -1,9 +1,9 @@
 # Containerized Python API, Kafka, AWS Lambda Consumer
 
 Hello! This is a high-quality containerized Python API &rarr; managed Kafka
-cluster &rarr; AWS Lambda consumer system, provisioned with Terraform (and
-indirect CloudFormation, for the consumer stack). I hope you will be able to
-use it and adapt it for your own projects, under the terms of the license.
+cluster &rarr; AWS Lambda consumer system, provisioned with Terraform.
+(CloudFormation is used indirectly, for the Kafka consumer stack.) I hope you
+will be able to adapt it for your own projects, under the terms of the license.
 
 ## Innovations and Best Practices
 
@@ -22,7 +22,7 @@ use it and adapt it for your own projects, under the terms of the license.
 |<br/>&check; Quality|~Typical&nbsp;approach~<br/>My&nbsp;work|<br/>Advantage|
 |:---|:---|:---|
 |<br/>**&check; Small image**|||
-|Package cache|~None~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
+|Package and module caches|~Cleared or disabled~<br/>Via [Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
 |Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
 |Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker&nbsp;multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
 |<br/>**&check; Secure container**|||
@@ -36,7 +36,7 @@ use it and adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Low-code**|||
 |API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
 |Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
-|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; re-usable code accepts JSON input (I re-used a CloudFormation template from my other open-source projects, with small changes to the mapping and the Python code)|
+|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; code need only accept JSON input (I re-used a CloudFormation template from my other projects!)|
 |<br/>**&check; Low-cost**|||
 |Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts&nbsp;are&nbsp;higher](https://aws.amazon.com/ec2/spot/instance-advisor) than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;savings](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) are comparable|
 |CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
@@ -96,11 +96,11 @@ Jump to:
     - **EC2 instance**
 
       <details>
-        <summary>EC instance instructions...</summary>
+        <summary>EC2 instructions...</summary>
 
       <br/>
 
-      - Create an EC2 instance. I recommend:
+      - Create and/or connect to an EC2 instance. I recommend:
 
         - `arm64`
         - `t4g.micro` &#9888; The ARM-based AWS Graviton `g` architecture
