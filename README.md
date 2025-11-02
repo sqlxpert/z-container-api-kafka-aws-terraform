@@ -32,13 +32,13 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Secure private network**|||
 |Internet from private subnets|~NAT&nbsp;Gateway~<br/>No|Lower data exfiltration risk|
 |AWS service endpoints|~Public~<br/>Private|Traffic never leaves private network|
-|Security group rule scope|~Ranges&nbsp;of&nbsp;_numbered_&nbsp;addresses~<br/>Named&nbsp;security&nbsp;groups|Only pairs of known resources can communicate|
+|Security group rule scope|~Ranges&nbsp;of&nbsp;_numbered_&nbsp;addresses~<br/>Named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
 |<br/>**&check; Low-code**|||
 |API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
 |Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
-|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; code need only accept JSON input (I re-used a CloudFormation template from my other projects!)|
+|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) interacts with Kafka; code accepts JSON input (I re-used a CloudFormation template from my other projects!)|
 |<br/>**&check; Low-cost**|||
-|Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts&nbsp;are&nbsp;higher](https://aws.amazon.com/ec2/spot/instance-advisor) than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;savings](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) are comparable|
+|Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts](https://aws.amazon.com/ec2/spot/instance-advisor) are higher than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;pricing](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) works similarly|
 |CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
 |Expensive resources|~Always&nbsp;on~<br/>Conditional|Develop and test at the lowest AWS cost|
 |<br/>**&check; CI/CD-ready**|||
