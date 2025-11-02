@@ -129,18 +129,23 @@ module "hello_api_vpc_subnets" {
 
 
 locals {
-  endpoint_service_to_type = {
-    "s3"                = "Gateway"
-    "hello_api_public"  = "Interface"
-    "hello_api_private" = "Interface"
-    "kafka"             = "Interface"
-    "ecr.api"           = "Interface"
-    "ecr.dkr"           = "Interface"
-    "logs"              = "Interface"
-    "lambda"            = "Interface"
-    "sqs"               = "Interface"
-    "sts"               = "Interface"
-  }
+  endpoint_service_to_type = merge(
+    {
+      "s3"                = "Gateway"
+      "hello_api_public"  = "Interface"
+      "hello_api_private" = "Interface"
+      "kafka"             = "Interface"
+      "ecr.api"           = "Interface"
+      "ecr.dkr"           = "Interface"
+      "logs"              = "Interface"
+      "lambda"            = "Interface"
+      "sqs"               = "Interface"
+      "sts"               = "Interface"
+    },
+
+    var.enable_ecs_exec ?
+    { "ssmmessages" = "Interface" } : {},
+  )
   endpoint_services_set = toset(keys(local.endpoint_service_to_type))
   endpoint_types_set    = toset(values(local.endpoint_service_to_type))
 
@@ -157,31 +162,37 @@ locals {
     ) : endpoint_service => local.endpoint_service_to_type[endpoint_service]
   }
 
-  endpoint_flows = [
+  endpoint_flows = concat(
+    [
+      { client = "hello_api_private_client", service = "hello_api_private" },
 
-    { client = "hello_api_private_client", service = "hello_api_private" },
+      { client = "kafka_client", service = "kafka" },
 
-    { client = "kafka_client", service = "kafka" },
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html#fargate-ecs-vpc-endpoint-considerations
+      # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch-logs-and-interface-VPC.html
+      # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
+      { client = "ecs_task", service = "s3" },
+      { client = "ecs_task", service = "ecr.api" },
+      { client = "ecs_task", service = "ecr.dkr" },
+      { client = "ecs_task", service = "logs" },
 
-    # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html#fargate-ecs-vpc-endpoint-considerations
-    # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch-logs-and-interface-VPC.html
-    # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
-    { client = "ecs_task", service = "s3" },
-    { client = "ecs_task", service = "ecr.api" },
-    { client = "ecs_task", service = "ecr.dkr" },
-    { client = "ecs_task", service = "logs" },
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-network-requirements
+      { client = "msk_lambda_function", service = "kafka" },
+      { client = "msk_lambda_function", service = "lambda" },
+      { client = "msk_lambda_function", service = "sts" },
 
-    # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-network-requirements
-    { client = "msk_lambda_function", service = "kafka" },
-    { client = "msk_lambda_function", service = "lambda" },
-    { client = "msk_lambda_function", service = "sts" },
+      # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-endpoints.html#vpc-endpoint-create
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-vpc-privatelink
+      # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-internetwork-traffic-privacy.html
+      { client = "lambda_function", service = "sqs" },
+      { client = "lambda_function", service = "logs" },
+    ],
 
-    # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-endpoints.html#vpc-endpoint-create
-    # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-vpc-privatelink
-    # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-internetwork-traffic-privacy.html
-    { client = "lambda_function", service = "sqs" },
-    { client = "lambda_function", service = "logs" },
-  ]
+    var.enable_ecs_exec ? [
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations
+      { client = "ecs_task", service = "ssmmessages" },
+    ] : [],
+  )
 
   endpoint_clients_set = toset(local.endpoint_flows[*]["client"])
 

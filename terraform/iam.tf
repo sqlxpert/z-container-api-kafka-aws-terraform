@@ -4,6 +4,70 @@
 
 
 
+data "aws_iam_policy_document" "hello_api_ecs_task" {
+
+  statement {
+    actions = [
+      "logs:DescribeLogGroups",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:DescribeLogStreams",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      join(":", [
+        replace(aws_cloudwatch_log_group.hello_api_ecs_task.arn, "/log-group:", "/log-stream:"),
+        "*"
+      ])
+    ]
+  }
+}
+
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html#ecs-exec-required-iam-permissions
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-required-logging-permissions
+
+data "aws_iam_policy_document" "hello_api_ecs_task_ecs_exec" {
+  count = var.enable_ecs_exec ? 1 : 0
+
+  statement {
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenDataChannel",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "logs:DescribeLogGroups",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:DescribeLogStreams",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      join(":", [
+        replace(aws_cloudwatch_log_group.hello_api_ecs_cluster.arn, "/log-group:", "/log-stream:"),
+        "*"
+      ])
+    ]
+  }
+}
+
+
+
 # https://docs.aws.amazon.com/msk/latest/developerguide/create-iam-role.html
 # https://docs.aws.amazon.com/service-authorization/latest/reference/list_apachekafkaapisforamazonmskclusters.html#apachekafkaapisforamazonmskclusters-actions-as-permissions
 # https://aws.amazon.com/blogs/big-data/amazon-msk-serverless-now-supports-kafka-clients-written-in-all-programming-languages/
@@ -91,6 +155,16 @@ locals {
       description     = "MSK hello_api cluster: create, write to '${var.kafka_topic}' topic"
       policy_document = data.aws_iam_policy_document.kafka_write
     }
+
+    "hello_api_ecs_task" = {
+      description     = "CloudWatch Logs hello_api task log group: write"
+      policy_document = data.aws_iam_policy_document.hello_api_ecs_task
+    }
+
+    "hello_api_ecs_task_ecs_exec" = {
+      description     = "Systems Manager: accept ECS Exec connections; CloudWatch Logs hello_api cluster log group: write"
+      policy_document = data.aws_iam_policy_document.hello_api_ecs_task_ecs_exec
+    }
   }
 
   roles = {
@@ -105,6 +179,8 @@ locals {
     "hello_api_ecs_task" = {
       assume_role_policy_document = data.aws_iam_policy_document.hello_api_ecs_task_assume_role
       attach_policies = [
+        "hello_api_ecs_task",
+        "hello_api_ecs_task_ecs_exec",
         "kafka_write",
       ]
     }

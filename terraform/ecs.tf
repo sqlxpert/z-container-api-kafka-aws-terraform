@@ -2,7 +2,6 @@
 # github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
-# For future use; see below
 resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
   name = "hello_api_ecs_cluster"
 
@@ -21,18 +20,17 @@ resource "aws_cloudwatch_log_group" "hello_api_ecs_task" {
 resource "aws_ecs_cluster" "hello_api" {
   name = "hello_api"
 
-  # For future use, if it's necessary to run arbitrary commands in containers.
-  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html
-  #
-  # configuration {
-  #   execute_command_configuration {
-  #     logging = "OVERRIDE"
-  #     log_configuration {
-  #       cloud_watch_encryption_enabled = true
-  #       cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello_api_ecs_cluster.name
-  #     }
-  #   }
-  # }
+  configuration {
+
+    # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-logging
+    execute_command_configuration {
+      logging = "OVERRIDE"
+      log_configuration {
+        cloud_watch_encryption_enabled = false
+        cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello_api_ecs_cluster.name
+      }
+    }
+  }
 }
 
 resource "aws_ecs_cluster_capacity_providers" "hello_api" {
@@ -143,7 +141,8 @@ resource "aws_ecs_service" "hello_api" {
 
   cluster = aws_ecs_cluster.hello_api.id
 
-  task_definition = aws_ecs_task_definition.hello_api.arn
+  task_definition        = aws_ecs_task_definition.hello_api.arn
+  enable_execute_command = var.enable_ecs_exec
 
   launch_type      = "FARGATE"
   platform_version = "1.4.0"

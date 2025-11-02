@@ -16,6 +16,13 @@ variable "hello_api_aws_ecr_image_tag" {
   default = "1.0.0"
 }
 
+variable "enable_ecs_exec" {
+  type        = bool
+  description = "Whether to enable ECS Exec, which allows you to run commands remotely or open an interactive shell inside a container task, using AWS Systems Manager. See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html ."
+
+  default = true
+}
+
 variable "enable_kafka" {
   type        = bool
   description = "Whether to create the MSK Serverless cluster. Set this to false to significantly reduce costs; the API will write only to the CloudWatch log. You must set this to false if create_vpc_endpoints_and_load_balancer is false ."
