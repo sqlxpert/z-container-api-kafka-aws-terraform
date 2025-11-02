@@ -2,12 +2,6 @@
 # github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
-locals {
-  hello_api_vpc_netmask_length        = 21
-  hello_api_vpc_subnet_netmask_length = 24
-  hello_api_vpc_private_subnet_count  = 3
-}
-
 
 
 resource "aws_vpc_ipam" "hello_api_vpc" {
@@ -27,7 +21,7 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc" {
 resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
 
-  cidr = "10.11.0.0/${local.hello_api_vpc_netmask_length}"
+  cidr = "${var.vpc_ipv4_cidr_block_start}/${var.vpc_netmask_length}"
 
   # Normally this would be a resource planning pool derived from a VPC, but
   # as of 2025-09, the Terraform AWS provider does not support SourceResource .
@@ -59,7 +53,7 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc_subnets" {
   address_family = "ipv4"
 
   auto_import                       = false
-  allocation_default_netmask_length = local.hello_api_vpc_subnet_netmask_length
+  allocation_default_netmask_length = var.vpc_subnet_netmask_length
 }
 resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
@@ -67,7 +61,7 @@ resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
 }
 
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
-  count = local.hello_api_vpc_private_subnet_count
+  count = var.vpc_private_subnet_count
 
   depends_on = [
     aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
@@ -82,7 +76,7 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
   ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
 }
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_public_subnets" {
-  count = local.hello_api_vpc_private_subnet_count
+  count = var.vpc_private_subnet_count
 
   depends_on = [
     aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
@@ -111,7 +105,7 @@ module "hello_api_vpc_subnets" {
     public  = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets[*].cidr
   }]
 
-  max_subnet_count = local.hello_api_vpc_private_subnet_count
+  max_subnet_count = var.vpc_private_subnet_count
   # Maximum subnets per type (public or private), not overall!
 
   public_route_table_enabled            = true
@@ -129,18 +123,23 @@ module "hello_api_vpc_subnets" {
 
 
 locals {
-  endpoint_service_to_type = {
-    "s3"                = "Gateway"
-    "hello_api_public"  = "Interface"
-    "hello_api_private" = "Interface"
-    "kafka"             = "Interface"
-    "ecr.api"           = "Interface"
-    "ecr.dkr"           = "Interface"
-    "logs"              = "Interface"
-    "lambda"            = "Interface"
-    "sqs"               = "Interface"
-    "sts"               = "Interface"
-  }
+  endpoint_service_to_type = merge(
+    {
+      "s3"                = "Gateway"
+      "hello_api_public"  = "Interface"
+      "hello_api_private" = "Interface"
+      "kafka"             = "Interface"
+      "ecr.api"           = "Interface"
+      "ecr.dkr"           = "Interface"
+      "logs"              = "Interface"
+      "lambda"            = "Interface"
+      "sqs"               = "Interface"
+      "sts"               = "Interface"
+    },
+
+    var.enable_ecs_exec ?
+    { "ssmmessages" = "Interface" } : {},
+  )
   endpoint_services_set = toset(keys(local.endpoint_service_to_type))
   endpoint_types_set    = toset(values(local.endpoint_service_to_type))
 
@@ -157,31 +156,37 @@ locals {
     ) : endpoint_service => local.endpoint_service_to_type[endpoint_service]
   }
 
-  endpoint_flows = [
+  endpoint_flows = concat(
+    [
+      { client = "hello_api_private_client", service = "hello_api_private" },
 
-    { client = "hello_api_private_client", service = "hello_api_private" },
+      { client = "kafka_client", service = "kafka" },
 
-    { client = "kafka_client", service = "kafka" },
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html#fargate-ecs-vpc-endpoint-considerations
+      # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch-logs-and-interface-VPC.html
+      # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
+      { client = "ecs_task", service = "s3" },
+      { client = "ecs_task", service = "ecr.api" },
+      { client = "ecs_task", service = "ecr.dkr" },
+      { client = "ecs_task", service = "logs" },
 
-    # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html#fargate-ecs-vpc-endpoint-considerations
-    # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch-logs-and-interface-VPC.html
-    # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
-    { client = "ecs_task", service = "s3" },
-    { client = "ecs_task", service = "ecr.api" },
-    { client = "ecs_task", service = "ecr.dkr" },
-    { client = "ecs_task", service = "logs" },
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-network-requirements
+      { client = "msk_lambda_function", service = "kafka" },
+      { client = "msk_lambda_function", service = "lambda" },
+      { client = "msk_lambda_function", service = "sts" },
 
-    # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-network-requirements
-    { client = "msk_lambda_function", service = "kafka" },
-    { client = "msk_lambda_function", service = "lambda" },
-    { client = "msk_lambda_function", service = "sts" },
+      # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-endpoints.html#vpc-endpoint-create
+      # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-vpc-privatelink
+      # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-internetwork-traffic-privacy.html
+      { client = "lambda_function", service = "sqs" },
+      { client = "lambda_function", service = "logs" },
+    ],
 
-    # https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-endpoints.html#vpc-endpoint-create
-    # https://docs.aws.amazon.com/lambda/latest/dg/with-msk-cluster-network.html#msk-vpc-privatelink
-    # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-internetwork-traffic-privacy.html
-    { client = "lambda_function", service = "sqs" },
-    { client = "lambda_function", service = "logs" },
-  ]
+    var.enable_ecs_exec ? [
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations
+      { client = "ecs_task", service = "ssmmessages" },
+    ] : [],
+  )
 
   endpoint_clients_set = toset(local.endpoint_flows[*]["client"])
 

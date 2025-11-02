@@ -31,13 +31,14 @@ locals {
     # https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html
     "kafka" = 9098
 
-    "s3"      = 443
-    "ecr.api" = 443
-    "ecr.dkr" = 443
-    "logs"    = 443
-    "lambda"  = 443
-    "sqs"     = 443
-    "sts"     = 443
+    "s3"          = 443
+    "ecr.api"     = 443
+    "ecr.dkr"     = 443
+    "logs"        = 443
+    "lambda"      = 443
+    "sqs"         = 443
+    "sts"         = 443
+    "ssmmessages" = 443
   }
 
   cloudformation_path = "${path.module}/cloudformation"
