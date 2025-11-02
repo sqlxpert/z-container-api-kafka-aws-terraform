@@ -2,6 +2,7 @@
 # github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
+# Possible future use for ECS Exec
 resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
   name = "hello_api_ecs_cluster"
 
