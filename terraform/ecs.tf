@@ -2,24 +2,6 @@
 # github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
 # GPLv3, Copyright Paul Marcelin
 
-# Possible future use for ECS Exec
-resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
-  region = local.aws_region_main
-  name   = "hello_api_ecs_cluster"
-
-  log_group_class   = "STANDARD"
-  retention_in_days = 3
-}
-
-# Pre-create to be sure this is tracked
-resource "aws_cloudwatch_log_group" "hello_api_ecs_task" {
-  region = local.aws_region_main
-  name   = "hello_api_ecs_task"
-
-  log_group_class   = "STANDARD"
-  retention_in_days = 3
-}
-
 resource "aws_ecs_cluster" "hello_api" {
   region = local.aws_region_main
   name   = "hello_api"
@@ -28,7 +10,13 @@ resource "aws_ecs_cluster" "hello_api" {
 
     # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-logging
     execute_command_configuration {
-      logging = "DEFAULT"
+
+      logging = "OVERRIDE"
+      log_configuration {
+        cloud_watch_log_group_name     = aws_cloudwatch_log_group.hello[local.hello_api_ecs_exec_log_group_name].name
+        cloud_watch_encryption_enabled = false
+        # cloud_watch_ or cloudwatch_ ? Gotta love the Terraform AWS provider!
+      }
     }
   }
 }
@@ -77,7 +65,7 @@ resource "aws_ecs_task_definition" "hello_api" {
   container_definitions = jsonencode([
     {
       name  = "hello_api"
-      image = "${aws_ecr_repository.hello.repository_url}:${var.hello_api_aws_ecr_image_tag}"
+      image = "${aws_ecr_repository.hello[local.ecr_repository_name].repository_url}:${var.hello_api_aws_ecr_image_tag}"
 
       privileged = false
 
@@ -127,7 +115,7 @@ resource "aws_ecs_task_definition" "hello_api" {
           awslogs-region = local.aws_region_main
 
           awslogs-create-group  = "true" # String (!), and "false" not allowed
-          awslogs-group         = aws_cloudwatch_log_group.hello_api_ecs_task.name
+          awslogs-group         = aws_cloudwatch_log_group.hello[local.hello_api_web_log_group_name].name
           awslogs-stream-prefix = "hello_api"
 
           mode            = "non-blocking"

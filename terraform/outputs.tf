@@ -3,21 +3,21 @@
 # GPLv3, Copyright Paul Marcelin
 
 output "hello_api_aws_ecr_registry_region" {
-  value       = aws_ecr_repository.hello.region
+  value       = aws_ecr_repository.hello[local.ecr_repository_name].region
   description = "AWS region code for hello_api resources"
   sensitive   = false
   ephemeral   = false
 }
 
 output "hello_api_aws_ecr_registry_uri" {
-  value       = split("/", aws_ecr_repository.hello.repository_url)[0]
+  value       = split("/", aws_ecr_repository.hello[local.ecr_repository_name].repository_url)[0]
   description = "URI of registry containing hello_api Elastic Container Registry repository"
   sensitive   = false
   ephemeral   = false
 }
 
 output "hello_api_aws_ecr_repository_url" {
-  value       = aws_ecr_repository.hello.repository_url
+  value       = aws_ecr_repository.hello[local.local.ecr_repository_name].repository_url
   description = "URL of hello_api Elastic Container Registry repository"
   sensitive   = false
   ephemeral   = false

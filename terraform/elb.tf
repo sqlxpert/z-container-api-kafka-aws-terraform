@@ -123,7 +123,7 @@ resource "aws_lb_listener" "hello_api" {
       for_each = toset(each.value ? ["https"] : [])
 
       content {
-        protocol = redirect.key
+        protocol = upper(redirect.key)
         port     = tostring(local.tcp_ports[redirect.key])
 
         status_code = "HTTP_301"

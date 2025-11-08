@@ -39,7 +39,7 @@ variable "vpc_private_subnet_count" {
 
 variable "create_aws_ecr_repository" {
   type        = bool
-  description = "Whether to create the Elastic Container Registry repository. Change the value to false to import the ${local.ecr_repository_name} repository if you created it previously and have preserved it."
+  description = "Whether to create the Elastic Container Registry repository. Change the value to false to import the hello_api repository if you created it previously and have preserved it."
 
   default = true
 }
@@ -106,7 +106,7 @@ variable "enable_https" {
 
 variable "create_lambda_testevent_schema_registry" {
   type        = bool
-  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name ${local.lambda_testevent_schemas_registry_name} already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
+  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name lambda-testevent-schemas already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
 
   default = true
 }
@@ -122,12 +122,12 @@ variable "amazon_linux_base_version" {
   type        = string
   description = "The version of the Amazon Linux base image. See docs.aws.amazon.com/linux/al2023/ug/base-container.html , gallery.ecr.aws/amazonlinux/amazonlinux , and github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
-  default = "2023.8.20250818.0"
+  default = "2023.9.20251105.0"
 }
 
 variable "amazon_linux_base_digest" {
   type        = string
   description = "The digest of the Amazon Linux base image. See github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
-  default = "sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
+  default = "sha256:5ea333708360add6cc16ecec2569b8b75b6ee862528217bac65ad80752f4129b"
 }

@@ -4,8 +4,8 @@
 
 # Defaults required:
 # https://docs.docker.com/reference/build-checks/invalid-default-arg-in-from
-ARG AMAZON_LINUX_BASE_VERSION='2023.8.20250818.0'
-ARG AMAZON_LINUX_BASE_DIGEST='sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55'
+ARG AMAZON_LINUX_BASE_VERSION='2023.9.20251105.0'
+ARG AMAZON_LINUX_BASE_DIGEST='sha256:5ea333708360add6cc16ecec2569b8b75b6ee862528217bac65ad80752f4129b'
 FROM "amazonlinux:${AMAZON_LINUX_BASE_VERSION}@${AMAZON_LINUX_BASE_DIGEST}"
 
 ARG AMAZON_LINUX_BASE_VERSION
@@ -32,6 +32,8 @@ RUN \
     --setopt=install_weak_deps=False \
     --nodocs \
     python3.12 \
+    coreutils \
+    util-linux \
     shadow-utils \
   && useradd --shell /usr/bin/bash --home /hello_api --user-group --uid 1011 hello_api \
   && dnf remove \
@@ -39,6 +41,7 @@ RUN \
     --setopt=clean_requirements_on_remove=True \
     shadow-utils
 # shadow-utils provides useradd
+# coreutils provides cat and util-linux provides script for ECS Exec logging
 # Operating system package versions are omitted, thanks to
 # https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html
 
@@ -57,7 +60,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 RUN \
   --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
   --mount=type=cache,target=.cache/pip,uid=1011,gid=1011 \
-  pip install --upgrade pip==25.2 \
+  pip install --upgrade pip==25.3 \
   && pip install --requirement /tmp/requirements.txt \
   && pip uninstall --yes pip
 

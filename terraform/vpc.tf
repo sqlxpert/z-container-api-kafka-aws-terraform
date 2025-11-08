@@ -40,7 +40,7 @@ resource "aws_vpc_ipam_pool_cidr" "hello_vpc" {
 
 module "hello_vpc" {
   source  = "cloudposse/vpc/aws"
-  version = "2.3.0"
+  version = "3.0.0"
 
   name    = "hello"
   enabled = true
@@ -126,11 +126,6 @@ module "hello_vpc_subnets" {
   public_route_table_per_subnet_enabled = false
   nat_gateway_enabled                   = var.create_nat_gateway
   max_nats                              = 1
-
-  depends_on = [
-    aws_vpc_ipam_pool_cidr_allocation.hello_vpc_private_subnets,
-    aws_vpc_ipam_pool_cidr_allocation.hello_vpc_public_subnets,
-  ]
 }
 
 

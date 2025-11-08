@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "hello_api_ecs_task" {
       "logs:DescribeLogStreams",
     ]
     resources = [
-      aws_cloudwatch_log_group.hello_api_ecs_task.arn,
+      aws_cloudwatch_log_group.hello[local.hello_api_ecs_exec_log_group_name].arn,
     ]
   }
 
@@ -29,7 +29,7 @@ data "aws_iam_policy_document" "hello_api_ecs_task" {
     ]
     resources = [
       join(":", [
-        aws_cloudwatch_log_group.hello_api_ecs_task.arn,
+        aws_cloudwatch_log_group.hello[local.hello_api_ecs_exec_log_group_name].arn,
         "log-stream",
         "*"
       ])
@@ -65,7 +65,7 @@ data "aws_iam_policy_document" "hello_api_ecs_task_ecs_exec" {
       "logs:DescribeLogStreams",
     ]
     resources = [
-      aws_cloudwatch_log_group.hello_api_ecs_cluster.arn,
+      aws_cloudwatch_log_group.hello[local.hello_api_web_log_group_name].arn,
     ]
   }
 
@@ -76,7 +76,7 @@ data "aws_iam_policy_document" "hello_api_ecs_task_ecs_exec" {
     ]
     resources = [
       join(":", [
-        aws_cloudwatch_log_group.hello_api_ecs_cluster.arn,
+        aws_cloudwatch_log_group.hello[local.hello_api_web_log_group_name].arn,
         "log-stream",
         "*"
       ])

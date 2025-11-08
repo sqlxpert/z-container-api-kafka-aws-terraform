@@ -18,15 +18,11 @@ resource "aws_ecr_repository" "hello" {
   encryption_configuration {
     encryption_type = "KMS"
   }
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
 }
 
 import {
   for_each = toset(
-    var.create_aws_ecr_repository ? [] : aws_ecr_repository.hello
+    var.create_aws_ecr_repository ? [] : [local.ecr_repository_name]
   )
 
   id = join("@", [
@@ -40,17 +36,16 @@ import {
 
 data "aws_ecr_lifecycle_policy_document" "hello" {
   for_each = toset(
-    var.create_aws_ecr_repository ? aws_ecr_repository.hello : []
+    var.create_aws_ecr_repository ? [local.ecr_repository_name] : []
   )
 
   rule {
     priority = 1
 
     selection {
-      tag_status      = "tagged"
-      tag_prefix_list = ["hello_api"]
-      count_type      = "imageCountMoreThan"
-      count_number    = 2
+      tag_status   = "any"
+      count_type   = "imageCountMoreThan"
+      count_number = 2
     }
 
     action {
@@ -60,10 +55,12 @@ data "aws_ecr_lifecycle_policy_document" "hello" {
 }
 
 resource "aws_ecr_lifecycle_policy" "hello" {
-  for_each = data.aws_ecr_lifecycle_policy_document.hello
+  for_each = toset(
+    var.create_aws_ecr_repository ? [local.ecr_repository_name] : []
+  )
 
   region     = local.aws_region_main
   repository = aws_ecr_repository.hello[each.key]
 
-  policy = each.value.json
+  policy = data.aws_ecr_lifecycle_policy_document.hello[each.key].json
 }

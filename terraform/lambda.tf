@@ -40,7 +40,7 @@ resource "aws_schemas_registry" "lambda_testevent" {
 import {
   for_each = toset(
     (var.enable_kafka && !var.create_lambda_testevent_schema_registry)
-    ? aws_schemas_registry.lambda_testevent
+    ? [local.lambda_testevent_schemas_registry_name]
     : []
   )
 

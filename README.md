@@ -224,7 +224,7 @@ Jump to:
     ```
 
     ```shell
-    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_public_subnets'
 
     ```
 
@@ -363,9 +363,8 @@ Jump to:
     </details>
 
 10. Access the
-    [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
-    CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
-    reserved for future use.)
+    [`/hello/`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3D$252Fhello$252F)`hello_api_web_log`
+    CloudWatch log group in the AWS Console.
 
     Periodic internal health checks, plus your occasional Web requests, should
     appear.
@@ -426,7 +425,7 @@ Jump to:
     ```shell
     cd ../terraform
     terraform state rm 'aws_schemas_registry.lambda_testevent'
-    # terraform state rm 'aws_ecr_repository.hello' 'aws_ecr_lifecycle_policy.hello'
+    # terraform state rm 'aws_ecr_repository.hello' 'aws_ecr_lifecycle_policy.hello' 'data.aws_ecr_lifecycle_policy_document.hello'
     terraform apply -destroy
     ```
 

@@ -24,7 +24,10 @@ locals {
 
   lambda_testevent_schemas_registry_name = "lambda-testevent-schemas"
 
-  ecr_repository_name = "hello"
+  ecr_repository_name = "hello_api"
+
+  hello_api_web_log_group_name      = "/hello/hello_api_web_log"
+  hello_api_ecs_exec_log_group_name = "/hello/hello_api_ecs_exec_log"
 
   tcp_ports = {
     "http"  = 80
