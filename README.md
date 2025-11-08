@@ -24,7 +24,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Small image**|||
 |Package and module caches|~Cleared or disabled~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
 |Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
-|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker&nbsp;multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
+|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
 |<br/>**&check; Secure container**|||
 |Base image|~Docker&nbsp;Community&nbsp;Python~<br/>Amazon&nbsp;Linux|Fewer vulnerabilities; frequent updates, _from AWS staff_; [deterministic&nbsp;OS&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)|
 |Image build platform|~Local computer~<br/>[AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)&nbsp;or&nbsp;EC2|Controlled, auditable environment; low malware risk|
@@ -32,7 +32,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Secure private network**|||
 |Internet from private subnets|~NAT&nbsp;Gateway~<br/>No|Lower data exfiltration risk|
 |AWS service endpoints|~Public~<br/>Private|Traffic never leaves private network|
-|Security group rule scope|~Ranges&nbsp;of&nbsp;_numbered_&nbsp;addresses~<br/>Named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
+|Security group rule scope|~Ranges&nbsp;of&nbsp;numbered&nbsp;addresses~<br/>Other&nbsp;named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
 |<br/>**&check; Low-code**|||
 |API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
 |Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
@@ -354,12 +354,11 @@ Jump to:
     this system (which of course is not tied to a pre-determined domain name).
     Proceed to view the responses from your new API...
 
-    If your Web browser configuration does not allow accessing Web sites with
+    If your browser configuration does not allow accessing Web sites with
     untrusted certificates, change the `enable_https` variable in Terraform,
-    run `terraform apply` _twice_ (don't ask!), and `http:` links will work
-    without redirection. After you have used `https:` with a particular site,
-    your browser might no longer allow `http:` for that site. Try an alternate
-    Web browser if necessary.
+    run `terraform apply`&nbsp;, and `http:` links will work without
+    redirection. After you have used `https:` with a particular domain, your
+    browser might no longer allow `http:`&nbsp;. Try with another browser.
 
     </details>
 
@@ -419,11 +418,15 @@ Jump to:
     `hello_api_aws_ecs_service_desired_count_tasks` and
     `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
     values if you'd like to continue experimenting. When you are done, delete
-    all resources; the minimum configuration carries a cost.
+    all resources; the minimum configuration carries a cost. If you will be
+    using the container image again soon, you can opt to preserve the Elastic
+    Container Registry repository (at a cost) by removing it from Terraform
+    state.
 
     ```shell
     cd ../terraform
     terraform state rm 'aws_schemas_registry.lambda_testevent'
+    # terraform state rm 'aws_ecr_repository.hello' 'aws_ecr_lifecycle_policy.hello'
     terraform apply -destroy
     ```
 

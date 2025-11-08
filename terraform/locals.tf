@@ -22,6 +22,10 @@ locals {
   # data.aws_region.name marked deprecated
   # in Terraform AWS provider v6.0.0
 
+  lambda_testevent_schemas_registry_name = "lambda-testevent-schemas"
+
+  ecr_repository_name = "hello"
+
   tcp_ports = {
     "http"  = 80
     "https" = 443

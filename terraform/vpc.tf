@@ -4,22 +4,30 @@
 
 
 
-resource "aws_vpc_ipam" "hello_api_vpc" {
+resource "aws_vpc_ipam" "hello_vpc" {
+  region = local.aws_region_main
+
   operating_regions {
     region_name = local.aws_region_main
   }
 }
 
-resource "aws_vpc_ipam_pool" "hello_api_vpc" {
-  ipam_scope_id = aws_vpc_ipam.hello_api_vpc.private_default_scope_id
+
+
+resource "aws_vpc_ipam_pool" "hello_vpc" {
+  region = local.aws_region_main
+
+  ipam_scope_id = aws_vpc_ipam.hello_vpc.private_default_scope_id
   locale        = local.aws_region_main
 
   address_family = "ipv4"
 
   auto_import = false
 }
-resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc" {
-  ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
+
+resource "aws_vpc_ipam_pool_cidr" "hello_vpc" {
+  region       = local.aws_region_main
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc.id
 
   cidr = "${var.vpc_ipv4_cidr_block_start}/${var.vpc_netmask_length}"
 
@@ -30,14 +38,14 @@ resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc" {
   # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_ipam_pool
 }
 
-module "hello_api_vpc" {
+module "hello_vpc" {
   source  = "cloudposse/vpc/aws"
   version = "2.3.0"
 
-  name    = "hello_api"
+  name    = "hello"
   enabled = true
 
-  ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_api_vpc.cidr
+  ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
   assign_generated_ipv6_cidr_block = false
 
   default_security_group_deny_all = true
@@ -45,9 +53,10 @@ module "hello_api_vpc" {
 
 
 
-resource "aws_vpc_ipam_pool" "hello_api_vpc_subnets" {
-  source_ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc.id
-  ipam_scope_id       = aws_vpc_ipam.hello_api_vpc.private_default_scope_id
+resource "aws_vpc_ipam_pool" "hello_vpc_subnets" {
+  region              = local.aws_region_main
+  source_ipam_pool_id = aws_vpc_ipam_pool.hello_vpc.id
+  ipam_scope_id       = aws_vpc_ipam.hello_vpc.private_default_scope_id
   locale              = local.aws_region_main
 
   address_family = "ipv4"
@@ -55,16 +64,18 @@ resource "aws_vpc_ipam_pool" "hello_api_vpc_subnets" {
   auto_import                       = false
   allocation_default_netmask_length = var.vpc_subnet_netmask_length
 }
-resource "aws_vpc_ipam_pool_cidr" "hello_api_vpc_subnets" {
-  ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
-  cidr         = aws_vpc_ipam_pool_cidr.hello_api_vpc.cidr
+
+resource "aws_vpc_ipam_pool_cidr" "hello_vpc_subnets" {
+  region       = local.aws_region_main
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
+  cidr         = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
 }
 
-resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
+resource "aws_vpc_ipam_pool_cidr_allocation" "hello_vpc_private_subnets" {
   count = var.vpc_private_subnet_count
 
   depends_on = [
-    aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
+    aws_vpc_ipam_pool_cidr.hello_vpc_subnets
   ]
 
   lifecycle {
@@ -73,13 +84,15 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_private_subnets" {
     ]
   }
 
-  ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
+  region       = local.aws_region_main
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
 }
-resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_public_subnets" {
+
+resource "aws_vpc_ipam_pool_cidr_allocation" "hello_vpc_public_subnets" {
   count = var.vpc_private_subnet_count
 
   depends_on = [
-    aws_vpc_ipam_pool_cidr.hello_api_vpc_subnets
+    aws_vpc_ipam_pool_cidr.hello_vpc_subnets
   ]
 
   lifecycle {
@@ -88,21 +101,22 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_api_vpc_public_subnets" {
     ]
   }
 
-  ipam_pool_id = aws_vpc_ipam_pool.hello_api_vpc_subnets.id
+  region       = local.aws_region_main
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
 }
 
-module "hello_api_vpc_subnets" {
+module "hello_vpc_subnets" {
   source  = "cloudposse/dynamic-subnets/aws"
   version = "2.4.2"
 
-  name    = "hello_api"
+  name    = "hello"
   enabled = true
 
-  vpc_id = module.hello_api_vpc.vpc_id
-  igw_id = [module.hello_api_vpc.igw_id]
+  vpc_id = module.hello_vpc.vpc_id
+  igw_id = [module.hello_vpc.igw_id]
   ipv4_cidrs = [{
-    private = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets[*].cidr
-    public  = aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets[*].cidr
+    private = aws_vpc_ipam_pool_cidr_allocation.hello_vpc_private_subnets[*].cidr
+    public  = aws_vpc_ipam_pool_cidr_allocation.hello_vpc_public_subnets[*].cidr
   }]
 
   max_subnet_count = var.vpc_private_subnet_count
@@ -112,13 +126,12 @@ module "hello_api_vpc_subnets" {
   public_route_table_per_subnet_enabled = false
   nat_gateway_enabled                   = var.create_nat_gateway
   max_nats                              = 1
+
+  depends_on = [
+    aws_vpc_ipam_pool_cidr_allocation.hello_vpc_private_subnets,
+    aws_vpc_ipam_pool_cidr_allocation.hello_vpc_public_subnets,
+  ]
 }
-
-
-
-# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html
-# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html#task-execution-ecr-conditionkeys
-# https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html
 
 
 
@@ -162,9 +175,11 @@ locals {
 
       { client = "kafka_client", service = "kafka" },
 
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html#task-execution-ecr-conditionkeys
       # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/vpc-endpoints.html#fargate-ecs-vpc-endpoint-considerations
+      # https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html
+      # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html#task-execution-ecr-conditionkeys
       # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch-logs-and-interface-VPC.html
-      # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
       { client = "ecs_task", service = "s3" },
       { client = "ecs_task", service = "ecr.api" },
       { client = "ecs_task", service = "ecr.dkr" },
@@ -184,6 +199,7 @@ locals {
 
     var.enable_ecs_exec ? [
       # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-considerations
+      # https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-privatelink.html
       { client = "ecs_task", service = "ssmmessages" },
     ] : [],
   )
@@ -219,7 +235,7 @@ resource "aws_security_group" "hello" {
 
   tags = { Name = join("", ["hello_", each.key]) }
 
-  vpc_id = module.hello_api_vpc.vpc_id
+  vpc_id = module.hello_vpc.vpc_id
 
   lifecycle {
     create_before_destroy = true
@@ -267,13 +283,13 @@ resource "aws_vpc_endpoint" "hello" {
     each.key
   ])
 
-  vpc_id = module.hello_api_vpc.vpc_id
+  vpc_id = module.hello_vpc.vpc_id
 
-  subnet_ids          = each.value == "Interface" ? module.hello_api_vpc_subnets.private_subnet_ids : null
+  subnet_ids          = each.value == "Interface" ? module.hello_vpc_subnets.private_subnet_ids : null
   security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
   private_dns_enabled = each.value == "Interface" ? true : null
 
-  route_table_ids = each.value == "Gateway" ? module.hello_api_vpc_subnets.private_route_table_ids : null
+  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets.private_route_table_ids : null
 }
 
 

@@ -21,7 +21,7 @@ resource "aws_cloudformation_stack" "kafka_consumer" {
     # Error: Inappropriate value for attribute "parameters": element
     # "[...]": string required, but have list of string.
     LambdaFnSubnetIds = join(",",
-      module.hello_api_vpc_subnets.private_subnet_ids
+      module.hello_vpc_subnets.private_subnet_ids
     )
     LambdaFnSecurityGroupIds = join(",",
       [

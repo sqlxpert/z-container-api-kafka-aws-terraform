@@ -4,7 +4,8 @@
 
 # Possible future use for ECS Exec
 resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
-  name = "hello_api_ecs_cluster"
+  region = local.aws_region_main
+  name   = "hello_api_ecs_cluster"
 
   log_group_class   = "STANDARD"
   retention_in_days = 3
@@ -12,14 +13,16 @@ resource "aws_cloudwatch_log_group" "hello_api_ecs_cluster" {
 
 # Pre-create to be sure this is tracked
 resource "aws_cloudwatch_log_group" "hello_api_ecs_task" {
-  name = "hello_api_ecs_task"
+  region = local.aws_region_main
+  name   = "hello_api_ecs_task"
 
   log_group_class   = "STANDARD"
   retention_in_days = 3
 }
 
 resource "aws_ecs_cluster" "hello_api" {
-  name = "hello_api"
+  region = local.aws_region_main
+  name   = "hello_api"
 
   configuration {
 
@@ -31,11 +34,12 @@ resource "aws_ecs_cluster" "hello_api" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "hello_api" {
+  region       = local.aws_region_main
   cluster_name = aws_ecs_cluster.hello_api.name
 
   capacity_providers = [
     "FARGATE_SPOT",
-    "FARGATE"
+    "FARGATE",
   ]
 
   default_capacity_provider_strategy {
@@ -51,6 +55,7 @@ resource "aws_ecs_cluster_capacity_providers" "hello_api" {
 }
 
 resource "aws_ecs_task_definition" "hello_api" {
+  region = local.aws_region_main
   family = "hello_api"
 
   lifecycle {
@@ -72,7 +77,7 @@ resource "aws_ecs_task_definition" "hello_api" {
   container_definitions = jsonencode([
     {
       name  = "hello_api"
-      image = "${aws_ecr_repository.hello_api.repository_url}:${var.hello_api_aws_ecr_image_tag}"
+      image = "${aws_ecr_repository.hello.repository_url}:${var.hello_api_aws_ecr_image_tag}"
 
       privileged = false
 
@@ -129,14 +134,14 @@ resource "aws_ecs_task_definition" "hello_api" {
           max-buffer-size = "10m"
         }
       }
-    }
+    },
   ])
 }
 
 resource "aws_ecs_service" "hello_api" {
-  name = "hello_api"
-
+  region  = local.aws_region_main
   cluster = aws_ecs_cluster.hello_api.id
+  name    = "hello_api"
 
   task_definition        = aws_ecs_task_definition.hello_api.arn
   enable_execute_command = var.enable_ecs_exec
@@ -148,7 +153,7 @@ resource "aws_ecs_service" "hello_api" {
 
   availability_zone_rebalancing = "ENABLED"
   network_configuration {
-    subnets          = module.hello_api_vpc_subnets.private_subnet_ids
+    subnets          = module.hello_vpc_subnets.private_subnet_ids
     assign_public_ip = false
 
     security_groups = [

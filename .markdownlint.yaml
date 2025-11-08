@@ -1,0 +1,15 @@
+---
+# Container Python API, Kafka, Lambda consumer, via Terraform + CloudFormation
+# github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws
+# GPLv3, Copyright Paul Marcelin
+
+default: true
+
+# line-length
+MD013:
+  line_length: 79
+  tables: false
+  code_blocks: false
+
+# no-inline-html
+MD033: false

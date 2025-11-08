@@ -4,42 +4,49 @@
 
 variable "aws_region_main" {
   type        = string
-  description = "Region code in which to create AWS resources. The empty string causes the module to use the default region configured for the Terraform AWS provider. Do not change this until all resource definitions have been made region-aware to take advantage of enhanced region support in v6.0.0 of the Terraform AWS provider. Non-region-aware modules will pose a problem."
+  description = "Region code in which to create AWS resources. The empty string causes the module to use the default region configured for the Terraform AWS provider. Do not change this until and unless all third-party modules have been made region-aware to take advantage of enhanced region support in v6.0.0 of the Terraform AWS provider."
 
   default = ""
 }
 
 variable "vpc_ipv4_cidr_block_start" {
   type        = string
-  description = "The starting IPv4 address for the new Virtual Private Cloud"
+  description = "Starting IPv4 address for the new Virtual Private Cloud"
 
   default = "10.11.0.0"
 }
 
 variable "vpc_netmask_length" {
   type        = number
-  description = "The netmask length for the new VPC. This determines the address space available for subnets."
+  description = "Netmask length for the new VPC. This determines the address space available for subnets."
 
   default = 21
 }
 
 variable "vpc_subnet_netmask_length" {
   type        = number
-  description = "The netmask length for each subnet of the new VPC. This determines the address space available for resources within a subnet."
+  description = "Netmask length for each subnet of the new VPC. This determines the address space available for resources within a subnet."
 
   default = 24
 }
 
 variable "vpc_private_subnet_count" {
   type        = number
-  description = "The number of private subnets in the new VPC. An equal number of public subnets will also be created."
+  description = "Number of private subnets in the new VPC. An equal number of public subnets will also be created."
 
   default = 3
 }
 
+variable "create_aws_ecr_repository" {
+  type        = bool
+  description = "Whether to create the Elastic Container Registry repository. Change the value to false to import the ${local.ecr_repository_name} repository if you created it previously and have preserved it."
+
+  default = true
+}
+
 variable "hello_api_aws_ecr_image_tag" {
   type        = string
-  description = "Version tag of hello_api image in Elastic Container Registry repository"
+  description = "Version tag of the hello_api image in the Elastic Container Registry repository"
 
   default = "1.0.0"
 }
@@ -99,7 +106,7 @@ variable "enable_https" {
 
 variable "create_lambda_testevent_schema_registry" {
   type        = bool
-  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name lambda-testevent-schemas already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
+  description = "Whether to create the EventBridge schema registry that houses shareable test events for all AWS sLambda functions. If running terraform apply with this set to true yields a \"Registry with name ${local.lambda_testevent_schemas_registry_name} already exists\" error, change the value to false to import the existing registry. This registry will already exist if a shareable test event has ever been created for any Lambda function in the current AWS account and region."
 
   default = true
 }

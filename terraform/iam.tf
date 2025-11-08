@@ -105,7 +105,7 @@ data "aws_iam_policy_document" "kafka_write" {
       "kafka-cluster:Connect",
       "kafka-cluster:DescribeCluster",
     ]
-    resources = [aws_msk_serverless_cluster.hello_api[0].arn]
+    resources = [aws_msk_serverless_cluster.hello_api[count.index].arn]
   }
   statement {
     actions = [
@@ -115,7 +115,7 @@ data "aws_iam_policy_document" "kafka_write" {
       "kafka-cluster:ReadData",
     ]
     resources = [join("/", [
-      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":topic/"),
+      replace(aws_msk_serverless_cluster.hello_api[count.index].arn, ":cluster/", ":topic/"),
       var.kafka_topic
     ])]
   }
@@ -125,7 +125,7 @@ data "aws_iam_policy_document" "kafka_write" {
       "kafka-cluster:AlterGroup",
     ]
     resources = [join("/", [
-      replace(aws_msk_serverless_cluster.hello_api[0].arn, ":cluster/", ":group/"),
+      replace(aws_msk_serverless_cluster.hello_api[count.index].arn, ":cluster/", ":group/"),
       "*"
     ])]
   }
