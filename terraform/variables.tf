@@ -4,42 +4,49 @@
 
 variable "aws_region_main" {
   type        = string
-  description = "Region code in which to create AWS resources. The empty string causes the module to use the default region configured for the Terraform AWS provider. Do not change this until all resource definitions have been made region-aware to take advantage of enhanced region support in v6.0.0 of the Terraform AWS provider. Non-region-aware modules will pose a problem."
+  description = "Region code in which to create AWS resources. The empty string causes the module to use the default region configured for the Terraform AWS provider. Do not change this until and unless all third-party modules have been made region-aware to take advantage of enhanced region support in v6.0.0 of the Terraform AWS provider."
 
   default = ""
 }
 
 variable "vpc_ipv4_cidr_block_start" {
   type        = string
-  description = "The starting IPv4 address for the new Virtual Private Cloud"
+  description = "Starting IPv4 address for the new Virtual Private Cloud"
 
   default = "10.11.0.0"
 }
 
 variable "vpc_netmask_length" {
   type        = number
-  description = "The netmask length for the new VPC. This determines the address space available for subnets."
+  description = "Netmask length for the new VPC. This determines the address space available for subnets."
 
   default = 21
 }
 
 variable "vpc_subnet_netmask_length" {
   type        = number
-  description = "The netmask length for each subnet of the new VPC. This determines the address space available for resources within a subnet."
+  description = "Netmask length for each subnet of the new VPC. This determines the address space available for resources within a subnet."
 
   default = 24
 }
 
 variable "vpc_private_subnet_count" {
   type        = number
-  description = "The number of private subnets in the new VPC. An equal number of public subnets will also be created."
+  description = "Number of private subnets in the new VPC. An equal number of public subnets will also be created."
 
   default = 3
 }
 
+variable "create_aws_ecr_repository" {
+  type        = bool
+  description = "Whether to create the Elastic Container Registry repository. If running terraform apply with this set to true yields a \"RepositoryAlreadyExistsException: The repository with name 'hello_api' already exists\", change the value to false to import your previously-created and preserved repository."
+
+  default = true
+}
+
 variable "hello_api_aws_ecr_image_tag" {
   type        = string
-  description = "Version tag of hello_api image in Elastic Container Registry repository"
+  description = "Version tag of the hello_api image in the Elastic Container Registry repository"
 
   default = "1.0.0"
 }
@@ -111,16 +118,36 @@ variable "create_nat_gateway" {
   default = false
 }
 
+
+
+# I'd like to be able to get the initial Amazon Linux 2023 version and digest,
+# as of the user's first terraform apply, using a data source, but
+# data.aws_ecr_image works only with private repositories,
+# data.aws_ecrpublic_image has not been implemented as of 2025-11, and
+# data.aws_ecrpublic_images , new in Terraform AWS provider v6.19.0
+# (2025-10-30), requires a numeric AWS account for registry_id . There is still
+# no support for a registry alias (amazonlinux) or a direct URL
+# (https://gallery.ecr.aws/amazonlinux/amazonlinux), either of which would be
+# needed. Using the special AWS account number 137112412989 for registry_id
+# gives a resource policy permissions error. (If not specified, registry_id
+# defaults to the caller's own AWS account number if ; that's all that's meant
+# by the "default" public registry!) I don't want to depend on an entire
+# Terraform module or on a non-AWS provider, and read Amazon Linux 2023
+# container metadata from the Docker registry instead of from the upstream
+# origin, AWS!
+# https://github.com/hashicorp/terraform-provider-aws/issues/41718
+# https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/data-sources/ecrpublic_images
+
 variable "amazon_linux_base_version" {
   type        = string
   description = "The version of the Amazon Linux base image. See docs.aws.amazon.com/linux/al2023/ug/base-container.html , gallery.ecr.aws/amazonlinux/amazonlinux , and github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
-  default = "2023.8.20250818.0"
+  default = "2023.9.20251105.0"
 }
 
 variable "amazon_linux_base_digest" {
   type        = string
   description = "The digest of the Amazon Linux base image. See github.com/amazonlinux/container-images/blob/al2023/Dockerfile"
 
-  default = "sha256:f5077958231a41decbd60c59c48cdb30519b77fdd326e829893470e3a8aa2e55"
+  default = "sha256:5ea333708360add6cc16ecec2569b8b75b6ee862528217bac65ad80752f4129b"
 }

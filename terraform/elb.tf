@@ -5,12 +5,13 @@
 resource "aws_lb" "hello_api" {
   count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
 
+  region             = local.aws_region_main
   name               = "hello-api"
   load_balancer_type = "application"
 
   internal        = false
   ip_address_type = "ipv4"
-  subnets         = module.hello_api_vpc_subnets.public_subnet_ids
+  subnets         = module.hello_vpc_subnets.public_subnet_ids
 
   security_groups = [
     aws_security_group.hello["hello_api_public"].id,
@@ -28,9 +29,10 @@ resource "aws_lb" "hello_api" {
 resource "aws_lb_target_group" "hello_api" {
   count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
 
-  name = "hello-api"
+  region = local.aws_region_main
+  name   = "hello-api"
 
-  vpc_id      = module.hello_api_vpc.vpc_id
+  vpc_id      = module.hello_vpc.vpc_id
   target_type = "ip"
   port        = local.tcp_ports["hello_api_private"]
   protocol    = "HTTP"
@@ -49,31 +51,17 @@ resource "aws_lb_target_group" "hello_api" {
   }
 }
 
-# As of 2025-09, Terraform has no create-after-destroy-like feature that would
-# allow a forward listener on Port 80 to be destroyed before a redirect
-# listener is created on the same port. Just apply twice! The error was:
+# A single listener for the non-encrypted port, with variable default_action
+# content, avoids a Terraform error and the need for a double-apply when
+# toggling enable_https . As of 2025-09, Terraform has no
+# create-after-destroy-like feature that would allow a forward listener to be
+# destroyed before a redirect listener is created on the same port.
 # Error: creating ELBv2 Listener ([arn]): operation error Elastic Load
 # Balancing v2: CreateListener, https response error StatusCode: 400,
 # RequestID: [...], DuplicateListener: A listener already exists on this port
 # for this load balancer '[arn]'
 # Feature request punted to the provider:
 # https://github.com/hashicorp/terraform/issues/26407
-
-resource "aws_lb_listener" "hello_api_http_only" {
-  count = (
-    var.create_vpc_endpoints_and_load_balancer && !var.enable_https ? 1 : 0
-  )
-
-  load_balancer_arn = aws_lb.hello_api[0].arn
-
-  port     = "80"
-  protocol = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.hello_api[0].arn
-  }
-}
 
 module "hello_api_tls_certificate" {
   source  = "cloudposse/ssm-tls-self-signed-cert/aws"
@@ -100,41 +88,32 @@ module "hello_api_tls_certificate" {
   ]
 }
 
-resource "aws_lb_listener" "hello_api_http_redirect_to_https" {
-  count = (
-    var.create_vpc_endpoints_and_load_balancer && var.enable_https ? 1 : 0
-  )
+resource "aws_lb_listener" "hello_api" {
+  for_each = local.public_protocol_redirect
 
+  region            = local.aws_region_main
   load_balancer_arn = aws_lb.hello_api[0].arn
 
-  port     = "80"
-  protocol = "HTTP"
+  protocol = upper(each.key)
+  port     = tostring(local.tcp_ports[each.key])
+
+  ssl_policy      = each.key == "https" ? "ELBSecurityPolicy-TLS13-1-2-Res-2021-06" : null
+  certificate_arn = each.key == "https" ? module.hello_api_tls_certificate.certificate_arn : null
 
   default_action {
-    type = "redirect"
+    type = each.value ? "redirect" : "forward"
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+    target_group_arn = each.value ? null : aws_lb_target_group.hello_api[0].arn
+
+    dynamic "redirect" {
+      for_each = toset(each.value ? ["https"] : [])
+
+      content {
+        protocol = upper(redirect.key)
+        port     = tostring(local.tcp_ports[redirect.key])
+
+        status_code = "HTTP_301"
+      }
     }
-  }
-}
-
-resource "aws_lb_listener" "hello_api_https" {
-  count = (
-    var.create_vpc_endpoints_and_load_balancer && var.enable_https ? 1 : 0
-  )
-
-  load_balancer_arn = aws_lb.hello_api[0].arn
-
-  port            = "443"
-  protocol        = "HTTPS"
-  ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
-  certificate_arn = module.hello_api_tls_certificate.certificate_arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.hello_api[0].arn
   }
 }

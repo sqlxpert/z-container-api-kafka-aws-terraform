@@ -1,9 +1,10 @@
 # Containerized Python API, Kafka, AWS Lambda Consumer
 
-Hello! This is a high-quality containerized Python API &rarr; managed Kafka
-cluster &rarr; AWS Lambda consumer system, provisioned with Terraform.
-(CloudFormation is used indirectly, for the Kafka consumer stack.) I hope you
-will be able to adapt it for your own projects, under the terms of the license.
+Hello! This is a high-quality containerized **Python API &rarr; managed Kafka
+cluster &rarr; AWS Lambda consumer function** reference architecture,
+provisioned with Terraform. (CloudFormation is used indirectly, for a modular
+Kafka consumer stack.) I hope you will be able to adapt it for your own
+projects, under the terms of the license.
 
 ## Innovations and Best Practices
 
@@ -24,7 +25,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Small image**|||
 |Package and module caches|~Cleared or disabled~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
 |Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
-|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [Docker&nbsp;multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
+|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
 |<br/>**&check; Secure container**|||
 |Base image|~Docker&nbsp;Community&nbsp;Python~<br/>Amazon&nbsp;Linux|Fewer vulnerabilities; frequent updates, _from AWS staff_; [deterministic&nbsp;OS&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)|
 |Image build platform|~Local computer~<br/>[AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)&nbsp;or&nbsp;EC2|Controlled, auditable environment; low malware risk|
@@ -32,7 +33,7 @@ will be able to adapt it for your own projects, under the terms of the license.
 |<br/>**&check; Secure private network**|||
 |Internet from private subnets|~NAT&nbsp;Gateway~<br/>No|Lower data exfiltration risk|
 |AWS service endpoints|~Public~<br/>Private|Traffic never leaves private network|
-|Security group rule scope|~Ranges&nbsp;of&nbsp;_numbered_&nbsp;addresses~<br/>Named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
+|Security group rule scope|~Ranges&nbsp;of&nbsp;numbered&nbsp;addresses~<br/>Other&nbsp;named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
 |<br/>**&check; Low-code**|||
 |API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
 |Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
@@ -42,9 +43,9 @@ will be able to adapt it for your own projects, under the terms of the license.
 |CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
 |Expensive resources|~Always&nbsp;on~<br/>Conditional|Develop and test at the lowest AWS cost|
 |<br/>**&check; CI/CD-ready**|||
-|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions|
+|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions can coexist, for testing and blue/green deployment|
 |Image build software platform|~MacOS~<br/>Amazon&nbsp;Linux|Ready for centralized building|
-|Private address allocation|~Fixed~<br/>Flexible|Instead of specifying multiple interdependent address ranges, specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
+|Private address allocation|~Fixed~<br/>Flexible|Specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
 |Lambda function tests|~In&nbsp;files~<br/>[Central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)|[Realistic, centrally&#8209;executed&nbsp;tests](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-invoke.html#using-sam-cli-remote-invoke-shareable) (see [shareable&nbsp;Lambda&nbsp;test](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/1edaa6a/cloudformation/kafka_consumer.yaml#L567-L598))|
 
 </details>
@@ -224,7 +225,7 @@ Jump to:
     ```
 
     ```shell
-    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_api_vpc_public_subnets'
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_subnets'
 
     ```
 
@@ -248,14 +249,19 @@ Jump to:
     ```
 
     <details>
-      <summary>In case of an "already exists" error...</summary>
+      <summary>In case of "already exists" errors...</summary>
 
     <br/>
 
+    - If you receive a "RepositoryAlreadyExistsException: The repository with
+      name 'hello_api' already exists", set
+      `create_aws_ecr_repository = false`&nbsp;.
+
     - If you receive a "Registry with name `lambda-testevent-schemas` already
       exists" error, set
-      `create_lambda_testevent_schema_registry = false`&nbsp;, then run
-      `terraform apply` again.
+      `create_lambda_testevent_schema_registry = false`&nbsp;.
+
+    After changing the variable(s), run `terraform apply` again.
 
     </details>
 
@@ -269,8 +275,6 @@ Jump to:
     AWS_ECR_REGISTRY_URI=$(terraform output -raw 'hello_api_aws_ecr_registry_uri')
     AWS_ECR_REPOSITORY_URL=$(terraform output -raw 'hello_api_aws_ecr_repository_url')
     HELLO_API_AWS_ECR_IMAGE_TAG=$(terraform output -raw 'hello_api_aws_ecr_image_tag')
-
-    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
 
     aws ecr get-login-password --region "${AWS_ECR_REGISTRY_REGION}" | sudo docker login --username 'AWS' --password-stdin "${AWS_ECR_REGISTRY_URI}"
 
@@ -313,21 +317,16 @@ Jump to:
  8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
 
-    <details>
-      <summary>Container deployment delay...</summary>
-
-    <br/>
-
     - It will take a few minutes for ECS to notice, and then deploy, the
       container image. Relax, and let it happen. If you are impatient, or if
       there is a problem, you can navigate to the `hello_api` service, open the
       orange "Update service" pop-up menu, and select "Force new deployment".
 
-    </details>
-
  9. Generate the URLs and then test your API.
 
     ```shell
+    cd ../terraform
+    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name')
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
 
     ```
@@ -336,7 +335,7 @@ Jump to:
     `curl --location --insecure`
     (these options allow redirection and self-signed TLS certificates).
 
-    |Method|Result Expected|
+    |Method, parameters|Result expected|
     |:---|:---|
     |`/healthcheck`|Empty response|
     |`/hello`|Fixed greeting, in a JSON object|
@@ -354,19 +353,17 @@ Jump to:
     this system (which of course is not tied to a pre-determined domain name).
     Proceed to view the responses from your new API...
 
-    If your Web browser configuration does not allow accessing Web sites with
-    untrusted certificates, change the `enable_https` variable in Terraform,
-    run `terraform apply` _twice_ (don't ask!), and `http:` links will work
-    without redirection. After you have used `https:` with a particular site,
-    your browser might no longer allow `http:` for that site. Try an alternate
-    Web browser if necessary.
+    If your browser configuration does not allow accessing Web sites with
+    untrusted certificates, change the `enable_https` variable to `false` and
+    run `terraform apply`&nbsp;. Now, `http:` links will work without
+    redirection. After you have used `https:` with a particular domain, your
+    browser might no longer allow `http:`&nbsp;. Try with another browser.
 
     </details>
 
 10. Access the
-    [`hello_api_ecs_task`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3Dhello_api_ecs_)
-    CloudWatch log group in the AWS Console. (`hello_api_ecs_cluster` is
-    reserved for future use.)
+    [`/hello/hello_api_web_log`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups/log-group/$252Fhello$252Fhello_api_web_log)
+    CloudWatch log group in the AWS Console.
 
     Periodic internal health checks, plus your occasional Web requests, should
     appear.
@@ -387,7 +384,41 @@ Jump to:
 
     </details>
 
-11. If you don't wish use Kafka, skip to Step&nbsp;13.
+11. If you wish to run commands remotely, or to open an interactive shell
+    inside a `hello_api` container, use
+    [ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html).
+
+    <details>
+      <summary>ECS Exec instructions...</summary>
+
+    <br/>
+
+    Change the `enable_ecs_exec` variable to `true`&nbsp;, run
+    `terraform apply`&nbsp;, and replace the container(s) using "Force new
+    deployment", as explained at the end of Step&nbsp;8.
+
+    In the Amazon Elastic Container Service section of the AWS Console, click
+    `hello_api` to open the cluster's page. Open the "Tasks" tab and click an
+    identifier in the "Task" column. Under "Containers", select the container,
+    then click "Connect". Confirm the command that will be executed.
+
+    You can also use the AWS command-line interface from your main CloudShell
+    session (or, with sufficient permissions, from an EC2 instance if you chose
+    to deploy from EC2).
+
+    ```shell
+    aws ecs list-tasks --cluster 'hello_api' --query 'taskArns' --output text
+    read -p 'Task ID: ' HELLO_API_ECS_TASK_ID
+    aws ecs execute-command --cluster 'hello_api' --task "${HELLO_API_ECS_TASK_ID}" --interactive --command '/bin/bash'
+    ```
+
+    Activities are logged in the
+    [`/hello/hello_api_ecs_exec_log`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups/log-group/$252Fhello$252Fhello_api_ecs_exec_log)
+    CloudWatch log group.
+
+    </details>
+
+12. If you don't wish use Kafka, skip to Step&nbsp;14.
 
     If you wish to enable Kafka, set `enable_kafka = true`&nbsp; and run
     `terraform apply`&nbsp;. AWS MSK is expensive, so enable Kafka only after
@@ -404,10 +435,10 @@ Jump to:
 
     </details>
 
-12. Access the `/current_time?name=Paul` method several times (adjust the name
-    as you wish). The first use of this method prompts creation of the `events`
-    Kafka topic. From now on, use of this method (not the others) will send a
-    message to the `events` Kafka topic.
+13. Access the `/current_time?name=Paul` method several times (adjust the name
+    parameter as you wish). The first use of this method prompts creation of
+    the `events` Kafka topic. From now on, use of this method (not the others)
+    will send a message to the `events` Kafka topic.
 
     The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
     reads from the Kafka topic and triggers the consumer Lambda function, which
@@ -415,15 +446,22 @@ Jump to:
     [HelloApiKafkaConsumer](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
     CloudWatch log group.
 
-13. Set the `enable_kafka`&nbsp;,
+14. If you wish to continue experimenting, set the `enable_kafka`&nbsp;,
     `hello_api_aws_ecs_service_desired_count_tasks` and
     `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
-    values if you'd like to continue experimenting. When you are done, delete
-    all resources; the minimum configuration carries a cost.
+    values and run `terraform apply`&nbsp;.
+
+    When you are finished, delete all resources; the minimum configuration
+    carries a cost.
+
+    If you will be using the container image again soon, you can preserve the
+    Elastic Container Registry image repository (at a cost) by removing it from
+    Terraform state.
 
     ```shell
     cd ../terraform
     terraform state rm 'aws_schemas_registry.lambda_testevent'
+    # terraform state rm 'aws_ecr_repository.hello' 'aws_ecr_lifecycle_policy.hello' 'data.aws_ecr_lifecycle_policy_document.hello'
     terraform apply -destroy
     ```
 
@@ -431,6 +469,9 @@ Jump to:
       <summary>Deletion delays and errors...</summary>
 
     <br/>
+
+    - Harmless "Invalid target address" errors may occur in some
+      configurations.
 
     - Deleting a VPC Lambda function takes a long time because of the network
       association; expect 30&nbsp;minutes if `enable_kafka` was `true`&nbsp;.

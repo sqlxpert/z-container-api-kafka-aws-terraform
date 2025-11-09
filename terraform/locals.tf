@@ -22,6 +22,13 @@ locals {
   # data.aws_region.name marked deprecated
   # in Terraform AWS provider v6.0.0
 
+  lambda_testevent_schemas_registry_name = "lambda-testevent-schemas"
+
+  ecr_repository_name = "hello_api"
+
+  hello_api_web_log_group_name      = "/hello/hello_api_web_log"
+  hello_api_ecs_exec_log_group_name = "/hello/hello_api_ecs_exec_log"
+
   tcp_ports = {
     "http"  = 80
     "https" = 443
@@ -40,6 +47,18 @@ locals {
     "sts"         = 443
     "ssmmessages" = 443
   }
+
+  public_protocol_redirect = merge(
+
+    var.create_vpc_endpoints_and_load_balancer ? {
+      http = false
+    } : {},
+
+    (var.create_vpc_endpoints_and_load_balancer && var.enable_https) ? {
+      https = false
+      http  = true
+    } : {},
+  )
 
   cloudformation_path = "${path.module}/cloudformation"
 }
