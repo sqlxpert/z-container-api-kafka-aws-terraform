@@ -13,12 +13,9 @@ resource "aws_ecr_repository" "hello" {
   # upload, but do not force this, as tag immutability would.
   # https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html
 
-  force_delete = true
-  lifecycle {
-    ignore_changes = [
-      force_delete, # Don't destroy a non-empty repository after importing it!
-    ]
-  }
+  force_delete = var.create_aws_ecr_repository
+  # Newly-created repository: Allow deletion even if images are present.
+  # Preserved, imported repository: Don't allow deletion unless it's empty.
 
   encryption_configuration {
     encryption_type = "KMS"
