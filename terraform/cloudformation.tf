@@ -5,16 +5,16 @@
 resource "aws_cloudformation_stack" "kafka_consumer" {
   count = var.enable_kafka ? 1 : 0
 
+  region        = local.aws_region_main
   name          = "HelloApiKafkaConsumer"
   template_body = file("${local.cloudformation_path}/kafka_consumer.yaml")
-
-  region = local.aws_region_main
 
   capabilities = ["CAPABILITY_IAM"]
 
   depends_on = [
     aws_schemas_registry.lambda_testevent,
   ]
+
   parameters = {
     # Terraform won't automatically convert HCL list(string) to
     # CloudFormation List<String> !

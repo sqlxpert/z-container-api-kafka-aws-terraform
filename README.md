@@ -225,7 +225,7 @@ Jump to:
     ```
 
     ```shell
-    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_private_subnets' -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_public_subnets'
+    terraform apply -target='aws_vpc_ipam_pool_cidr_allocation.hello_vpc_subnets'
 
     ```
 
