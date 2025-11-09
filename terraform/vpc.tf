@@ -52,12 +52,6 @@ module "hello_vpc" {
   name    = "hello"
   enabled = true
 
-  lifecycle {
-    ignore_changes = [
-      ipv4_primary_cidr_block,
-    ]
-  }
-
   ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
   assign_generated_ipv6_cidr_block = false
 
@@ -129,13 +123,6 @@ module "hello_vpc_subnets" {
 
   name    = "hello"
   enabled = true
-
-  lifecycle {
-    ignore_changes = [
-      ipv4_cidrs,
-      max_subnet_count,
-    ]
-  }
 
   vpc_id = module.hello_vpc.vpc_id
   igw_id = [module.hello_vpc.igw_id]
