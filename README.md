@@ -249,14 +249,19 @@ Jump to:
     ```
 
     <details>
-      <summary>In case of an "already exists" error...</summary>
+      <summary>In case of "already exists" errors...</summary>
 
     <br/>
 
+    - If you receive a "RepositoryAlreadyExistsException: The repository with
+      name 'hello_api' already exists", set
+      `create_aws_ecr_repository = false`&nbsp;.
+
     - If you receive a "Registry with name `lambda-testevent-schemas` already
       exists" error, set
-      `create_lambda_testevent_schema_registry = false`&nbsp;, then run
-      `terraform apply` again.
+      `create_lambda_testevent_schema_registry = false`&nbsp;.
+
+    After changing the variable(s), run `terraform apply` again.
 
     </details>
 
