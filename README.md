@@ -326,7 +326,7 @@ Jump to:
 
     ```shell
     cd ../terraform
-    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
+    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name')
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
 
     ```
