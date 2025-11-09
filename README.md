@@ -149,7 +149,7 @@ Jump to:
 
       </details>
 
- 2. Install Terraform. I'm standardizing on
+ 2. Install Terraform. I've standardized on
     [Terraform v1.10.0 (2024-11-27)](https://github.com/hashicorp/terraform/releases/tag/v1.10.0)
     as the minimum supported version for my open-source projects.
 
@@ -470,8 +470,13 @@ Jump to:
 
     <br/>
 
-    - Harmless "Invalid target address" errors may occur in some
+    - Harmless "Invalid target address" errors will occur in some
       configurations.
+
+    - If you receive a "RepositoryNotEmptyException", either delete your
+      container images or, if you wish to preserve them, remove the ECR
+      repository from Terraform state (the command is provided, but is
+      commented-out). Run `terraform apply -destroy` again.
 
     - Deleting a VPC Lambda function takes a long time because of the network
       association; expect 30&nbsp;minutes if `enable_kafka` was `true`&nbsp;.
