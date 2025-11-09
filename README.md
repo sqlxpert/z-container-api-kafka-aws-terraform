@@ -1,9 +1,10 @@
 # Containerized Python API, Kafka, AWS Lambda Consumer
 
-Hello! This is a high-quality containerized Python API &rarr; managed Kafka
-cluster &rarr; AWS Lambda consumer system, provisioned with Terraform.
-(CloudFormation is used indirectly, for the Kafka consumer stack.) I hope you
-will be able to adapt it for your own projects, under the terms of the license.
+Hello! This is a high-quality containerized **Python API &rarr; managed Kafka
+cluster &rarr; AWS Lambda consumer function** reference architecture,
+provisioned with Terraform. (CloudFormation is used indirectly, for a modular
+Kafka consumer stack.) I hope you will be able to adapt it for your own
+projects, under the terms of the license.
 
 ## Innovations and Best Practices
 
@@ -42,9 +43,9 @@ will be able to adapt it for your own projects, under the terms of the license.
 |CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
 |Expensive resources|~Always&nbsp;on~<br/>Conditional|Develop and test at the lowest AWS cost|
 |<br/>**&check; CI/CD-ready**|||
-|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions|
+|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions can coexist, for testing and blue/green deployment|
 |Image build software platform|~MacOS~<br/>Amazon&nbsp;Linux|Ready for centralized building|
-|Private address allocation|~Fixed~<br/>Flexible|Instead of specifying multiple interdependent address ranges, specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
+|Private address allocation|~Fixed~<br/>Flexible|Specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
 |Lambda function tests|~In&nbsp;files~<br/>[Central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)|[Realistic, centrally&#8209;executed&nbsp;tests](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-invoke.html#using-sam-cli-remote-invoke-shareable) (see [shareable&nbsp;Lambda&nbsp;test](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/1edaa6a/cloudformation/kafka_consumer.yaml#L567-L598))|
 
 </details>
@@ -329,7 +330,7 @@ Jump to:
     `curl --location --insecure`
     (these options allow redirection and self-signed TLS certificates).
 
-    |Method|Result Expected|
+    |Method and Paremeters|Result Expected|
     |:---|:---|
     |`/healthcheck`|Empty response|
     |`/hello`|Fixed greeting, in a JSON object|
@@ -430,9 +431,9 @@ Jump to:
     </details>
 
 13. Access the `/current_time?name=Paul` method several times (adjust the name
-    as you wish). The first use of this method prompts creation of the `events`
-    Kafka topic. From now on, use of this method (not the others) will send a
-    message to the `events` Kafka topic.
+    parameter as you wish). The first use of this method prompts creation of
+    the `events` Kafka topic. From now on, use of this method (not the others)
+    will send a message to the `events` Kafka topic.
 
     The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
     reads from the Kafka topic and triggers the consumer Lambda function, which
