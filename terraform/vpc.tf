@@ -16,7 +16,7 @@ resource "aws_vpc_ipam" "hello_vpc" {
 
 
 resource "aws_vpc_ipam_pool" "hello_vpc" {
-  description = "VPC"
+  description = "hello VPC private addresses"
 
   locale        = local.aws_region_main
   region        = local.aws_region_main
@@ -55,7 +55,7 @@ module "hello_vpc" {
 
 
 resource "aws_vpc_ipam_pool" "hello_vpc_subnets" {
-  description = "Subnets"
+  description = "hello VPC subnet private addresses"
 
   locale              = local.aws_region_main
   region              = local.aws_region_main
@@ -201,13 +201,13 @@ locals {
 
 
 
-# I hate wasting my time writing, and your time reading, duplicate information.
-# I don't write security group rule descriptions because rules are
-# self-describing. For security group names, I can update the EC2 Name tag
-# without replacing the security group (which interrupts network traffic if not
-# done carefully). I am reluctantly duplicating Name tag values as custom
-# security group physical names because, in the AWS Console, security group
-# rules show the physical names of referenced security groups.
+# I hate wasting my time writing, and your time having you read, duplicate
+# information. I don't write security group rule descriptions because rules are
+# self-describing. For security group names, I can update the Name tag without
+# replacing the security group (which fails, or interrupts network traffic, if
+# not done in multiple steps). I am reluctantly duplicating Name tag values as
+# custom security group physical names because, in the AWS Console, security
+# group rules show the physical names of referenced security groups.
 
 resource "aws_security_group" "hello" {
   for_each = local.security_group_keys_set
