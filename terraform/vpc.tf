@@ -30,6 +30,12 @@ resource "aws_vpc_ipam_pool_cidr" "hello_vpc" {
   region       = local.aws_region_main
   ipam_pool_id = aws_vpc_ipam_pool.hello_vpc.id
 
+  lifecycle {
+    ignore_changes = [
+      cidr,
+    ]
+  }
+
   cidr = "${var.vpc_ipv4_cidr_block_start}/${var.vpc_netmask_length}"
 
   # Normally this would be a resource planning pool derived from a VPC, but
@@ -45,6 +51,12 @@ module "hello_vpc" {
 
   name    = "hello"
   enabled = true
+
+  lifecycle {
+    ignore_changes = [
+      ipv4_primary_cidr_block,
+    ]
+  }
 
   ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
   assign_generated_ipv6_cidr_block = false
@@ -70,7 +82,14 @@ resource "aws_vpc_ipam_pool" "hello_vpc_subnets" {
 resource "aws_vpc_ipam_pool_cidr" "hello_vpc_subnets" {
   region       = local.aws_region_main
   ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
-  cidr         = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
+
+  lifecycle {
+    ignore_changes = [
+      cidr,
+    ]
+  }
+
+  cidr = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
 }
 
 locals {
@@ -111,14 +130,21 @@ module "hello_vpc_subnets" {
   name    = "hello"
   enabled = true
 
+  lifecycle {
+    ignore_changes = [
+      ipv4_cidrs,
+      max_subnet_count,
+    ]
+  }
+
   vpc_id = module.hello_vpc.vpc_id
   igw_id = [module.hello_vpc.igw_id]
   ipv4_cidrs = [{
     for subnet_scope, subnet_keys in local.subnet_scope_to_keys :
-    subnet_scope => [
+    subnet_scope => sort([
       for subnet_key in subnet_keys :
       aws_vpc_ipam_pool_cidr_allocation.hello_vpc_subnets[subnet_key].cidr
-    ]
+    ])
   }]
 
   max_subnet_count = var.vpc_private_subnet_count
