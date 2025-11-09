@@ -255,21 +255,35 @@ resource "aws_security_group" "hello" {
   vpc_id = module.hello_vpc.vpc_id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "hello" {
-  for_each = merge(
-    local.endpoint_type_to_flows["Custom"],
-    local.endpoint_type_to_flows["Interface"],
+
+
+resource "aws_vpc_endpoint" "hello" {
+  for_each = (
+    var.create_vpc_endpoints_and_load_balancer
+    ? local.aws_service_to_endpoint_type
+    : {}
   )
 
-  region            = local.aws_region_main
-  security_group_id = aws_security_group.hello[each.value["service"]].id
+  vpc_endpoint_type = each.value
 
-  tags                         = { Name = aws_security_group.hello[each.value["client"]].tags["Name"] }
-  referenced_security_group_id = aws_security_group.hello[each.value["client"]].id
-  ip_protocol                  = "tcp"
-  from_port                    = local.tcp_ports[each.value["service"]]
-  to_port                      = local.tcp_ports[each.value["service"]]
+  region = local.aws_region_main # service_region defaults to region
+  service_name = join(".", [
+    "com",
+    "amazonaws",
+    local.aws_region_main,
+    each.key
+  ])
+
+  subnet_ids          = each.value == "Interface" ? module.hello_vpc_subnets.private_subnet_ids : null
+  security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
+  private_dns_enabled = each.value == "Interface" ? true : null
+
+  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets.private_route_table_ids : null
+
+  vpc_id = module.hello_vpc.vpc_id
 }
+
+
 
 resource "aws_vpc_security_group_egress_rule" "hello" {
   for_each = merge(
@@ -305,32 +319,20 @@ resource "aws_vpc_security_group_egress_rule" "hello" {
   tags = { Name = each.value["service"] }
 }
 
-
-
-resource "aws_vpc_endpoint" "hello" {
-  for_each = (
-    var.create_vpc_endpoints_and_load_balancer
-    ? local.aws_service_to_endpoint_type
-    : {}
+resource "aws_vpc_security_group_ingress_rule" "hello" {
+  for_each = merge(
+    local.endpoint_type_to_flows["Custom"],
+    local.endpoint_type_to_flows["Interface"],
   )
 
-  vpc_endpoint_type = each.value
+  region            = local.aws_region_main
+  security_group_id = aws_security_group.hello[each.value["service"]].id
 
-  region = local.aws_region_main # service_region defaults to region
-  service_name = join(".", [
-    "com",
-    "amazonaws",
-    local.aws_region_main,
-    each.key
-  ])
-
-  subnet_ids          = each.value == "Interface" ? module.hello_vpc_subnets.private_subnet_ids : null
-  security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
-  private_dns_enabled = each.value == "Interface" ? true : null
-
-  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets.private_route_table_ids : null
-
-  vpc_id = module.hello_vpc.vpc_id
+  tags                         = { Name = aws_security_group.hello[each.value["client"]].tags["Name"] }
+  referenced_security_group_id = aws_security_group.hello[each.value["client"]].id
+  ip_protocol                  = "tcp"
+  from_port                    = local.tcp_ports[each.value["service"]]
+  to_port                      = local.tcp_ports[each.value["service"]]
 }
 
 

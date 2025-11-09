@@ -51,17 +51,7 @@ resource "aws_lb_target_group" "hello_api" {
   }
 }
 
-# A single listener for the non-encrypted port, with variable default_action
-# content, avoids a Terraform error and the need for a double-apply when
-# toggling enable_https . As of 2025-09, Terraform has no
-# create-after-destroy-like feature that would allow a forward listener to be
-# destroyed before a redirect listener is created on the same port.
-# Error: creating ELBv2 Listener ([arn]): operation error Elastic Load
-# Balancing v2: CreateListener, https response error StatusCode: 400,
-# RequestID: [...], DuplicateListener: A listener already exists on this port
-# for this load balancer '[arn]'
-# Feature request punted to the provider:
-# https://github.com/hashicorp/terraform/issues/26407
+
 
 module "hello_api_tls_certificate" {
   source  = "cloudposse/ssm-tls-self-signed-cert/aws"
@@ -87,6 +77,8 @@ module "hello_api_tls_certificate" {
     "server_auth"
   ]
 }
+
+
 
 resource "aws_lb_listener" "hello_api" {
   for_each = local.public_protocol_redirect
