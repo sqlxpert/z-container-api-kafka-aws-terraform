@@ -17,7 +17,7 @@ output "hello_api_aws_ecr_registry_uri" {
 }
 
 output "hello_api_aws_ecr_repository_url" {
-  value       = aws_ecr_repository.hello[local.local.ecr_repository_name].repository_url
+  value       = aws_ecr_repository.hello[local.ecr_repository_name].repository_url
   description = "URL of hello_api Elastic Container Registry repository"
   sensitive   = false
   ephemeral   = false

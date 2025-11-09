@@ -32,7 +32,7 @@ RUN \
     --setopt=install_weak_deps=False \
     --nodocs \
     python3.12 \
-    coreutils \
+    coreutils-single \
     util-linux \
     shadow-utils \
   && useradd --shell /usr/bin/bash --home /hello_api --user-group --uid 1011 hello_api \
@@ -41,7 +41,8 @@ RUN \
     --setopt=clean_requirements_on_remove=True \
     shadow-utils
 # shadow-utils provides useradd
-# coreutils provides cat and util-linux provides script for ECS Exec logging
+# coreutils-single (present in Amazon Linux by default, but noted here as a
+# dependency) provides cat and util-linux provides script for ECS Exec logging
 # Operating system package versions are omitted, thanks to
 # https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html
 

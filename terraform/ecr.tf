@@ -14,6 +14,11 @@ resource "aws_ecr_repository" "hello" {
   # https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html
 
   force_delete = true
+  lifecycle {
+    ignore_changes = [
+      force_delete, # Don't destroy a non-empty repository after importing it!
+    ]
+  }
 
   encryption_configuration {
     encryption_type = "KMS"
@@ -60,7 +65,7 @@ resource "aws_ecr_lifecycle_policy" "hello" {
   )
 
   region     = local.aws_region_main
-  repository = aws_ecr_repository.hello[each.key]
+  repository = aws_ecr_repository.hello[each.key].name
 
   policy = data.aws_ecr_lifecycle_policy_document.hello[each.key].json
 }

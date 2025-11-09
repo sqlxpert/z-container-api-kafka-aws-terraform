@@ -39,7 +39,7 @@ variable "vpc_private_subnet_count" {
 
 variable "create_aws_ecr_repository" {
   type        = bool
-  description = "Whether to create the Elastic Container Registry repository. Change the value to false to import the hello_api repository if you created it previously and have preserved it."
+  description = "Whether to create the Elastic Container Registry repository. If running terraform apply with this set to true yields a \"RepositoryAlreadyExistsException: The repository with name 'hello_api' already exists\", change the value to false to import your previously-created and preserved repository."
 
   default = true
 }
@@ -117,6 +117,26 @@ variable "create_nat_gateway" {
 
   default = false
 }
+
+
+
+# I'd like to be able to get the initial Amazon Linux 2023 version and digest,
+# as of the user's first terraform apply, using a data source, but
+# data.aws_ecr_image works only with private repositories,
+# data.aws_ecrpublic_image has not been implemented as of 2025-11, and
+# data.aws_ecrpublic_images , new in Terraform AWS provider v6.19.0
+# (2025-10-30), requires a numeric AWS account for registry_id . There is still
+# no support for a registry alias (amazonlinux) or a direct URL
+# (https://gallery.ecr.aws/amazonlinux/amazonlinux), either of which would be
+# needed. Using the special AWS account number 137112412989 for registry_id
+# gives a resource policy permissions error. (If not specified, registry_id
+# defaults to the caller's own AWS account number if ; that's all that's meant
+# by the "default" public registry!) I don't want to depend on an entire
+# Terraform module or on a non-AWS provider, and read Amazon Linux 2023
+# container metadata from the Docker registry instead of from the upstream
+# origin, AWS!
+# https://github.com/hashicorp/terraform-provider-aws/issues/41718
+# https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/data-sources/ecrpublic_images
 
 variable "amazon_linux_base_version" {
   type        = string

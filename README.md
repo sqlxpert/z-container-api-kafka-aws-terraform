@@ -313,17 +313,10 @@ Jump to:
  8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
 
-    <details>
-      <summary>Container deployment delay...</summary>
-
-    <br/>
-
     - It will take a few minutes for ECS to notice, and then deploy, the
       container image. Relax, and let it happen. If you are impatient, or if
       there is a problem, you can navigate to the `hello_api` service, open the
       orange "Update service" pop-up menu, and select "Force new deployment".
-
-    </details>
 
  9. Generate the URLs and then test your API.
 
@@ -355,15 +348,15 @@ Jump to:
     Proceed to view the responses from your new API...
 
     If your browser configuration does not allow accessing Web sites with
-    untrusted certificates, change the `enable_https` variable in Terraform,
-    run `terraform apply`&nbsp;, and `http:` links will work without
+    untrusted certificates, change the `enable_https` variable to `false` and
+    run `terraform apply`&nbsp;. Now, `http:` links will work without
     redirection. After you have used `https:` with a particular domain, your
     browser might no longer allow `http:`&nbsp;. Try with another browser.
 
     </details>
 
 10. Access the
-    [`/hello/`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3D$252Fhello$252F)`hello_api_web_log`
+    [`/hello/hello_api_web_log`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups/log-group/$252Fhello$252Fhello_api_web_log)
     CloudWatch log group in the AWS Console.
 
     Periodic internal health checks, plus your occasional Web requests, should
@@ -385,7 +378,41 @@ Jump to:
 
     </details>
 
-11. If you don't wish use Kafka, skip to Step&nbsp;13.
+11. If you wish to run commands remotely, or to open an interactive shell
+    inside a `hello_api` container, use
+    [ECS Exec](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html).
+
+    <details>
+      <summary>ECS Exec instructions...</summary>
+
+    <br/>
+
+    Change the `enable_ecs_exec` variable to `true`&nbsp;, run
+    `terraform apply`&nbsp;, and replace the container(s) using "Force new
+    deployment", as explained at the end of Step&nbsp;8.
+
+    In the Amazon Elastic Container Service section of the AWS Console, click
+    `hello_api` to open the cluster's page. Open the "Tasks" tab and click an
+    identifier in the "Task" column. Under "Containers", select the container,
+    then click "Connect". Confirm the command that will be executed.
+
+    You can also use the AWS command-line interface from your main CloudShell
+    session (or, with sufficient permissions, from an EC2 instance if you chose
+    to deploy from EC2).
+
+    ```shell
+    aws ecs list-tasks --cluster 'hello_api' --query 'taskArns' --output text
+    read -p 'Task ID: ' HELLO_API_ECS_TASK_ID
+    aws ecs execute-command --cluster 'hello_api' --task "${HELLO_API_ECS_TASK_ID}" --interactive --command '/bin/bash'
+    ```
+
+    Activities are logged in the
+    [`/hello/hello_api_ecs_exec_log`](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups/log-group/$252Fhello$252Fhello_api_ecs_exec_log)
+    CloudWatch log group.
+
+    </details>
+
+12. If you don't wish use Kafka, skip to Step&nbsp;14.
 
     If you wish to enable Kafka, set `enable_kafka = true`&nbsp; and run
     `terraform apply`&nbsp;. AWS MSK is expensive, so enable Kafka only after
@@ -402,7 +429,7 @@ Jump to:
 
     </details>
 
-12. Access the `/current_time?name=Paul` method several times (adjust the name
+13. Access the `/current_time?name=Paul` method several times (adjust the name
     as you wish). The first use of this method prompts creation of the `events`
     Kafka topic. From now on, use of this method (not the others) will send a
     message to the `events` Kafka topic.
@@ -413,14 +440,17 @@ Jump to:
     [HelloApiKafkaConsumer](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups$3FlogGroupNameFilter$3DHelloApiKafkaConsumer-LambdaFnLogGrp-)
     CloudWatch log group.
 
-13. Set the `enable_kafka`&nbsp;,
+14. If you wish to continue experimenting, set the `enable_kafka`&nbsp;,
     `hello_api_aws_ecs_service_desired_count_tasks` and
     `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
-    values if you'd like to continue experimenting. When you are done, delete
-    all resources; the minimum configuration carries a cost. If you will be
-    using the container image again soon, you can opt to preserve the Elastic
-    Container Registry repository (at a cost) by removing it from Terraform
-    state.
+    values and run `terraform apply`&nbsp;.
+
+    When you are finished, delete all resources; the minimum configuration
+    carries a cost.
+
+    If you will be using the container image again soon, you can preserve the
+    Elastic Container Registry image repository (at a cost) by removing it from
+    Terraform state.
 
     ```shell
     cd ../terraform
@@ -433,6 +463,9 @@ Jump to:
       <summary>Deletion delays and errors...</summary>
 
     <br/>
+
+    - Harmless "Invalid target address" errors may occur in some
+      configurations.
 
     - Deleting a VPC Lambda function takes a long time because of the network
       association; expect 30&nbsp;minutes if `enable_kafka` was `true`&nbsp;.

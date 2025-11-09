@@ -311,7 +311,7 @@ resource "aws_vpc_security_group_egress_rule" "hello_gateway" {
 
 
 resource "aws_vpc_security_group_ingress_rule" "hello_public" {
-  for_each = toset(var.enable_https ? ["https", "http"] : ["http"])
+  for_each = toset(keys(local.public_protocol_redirect))
 
   security_group_id = aws_security_group.hello["hello_api_public"].id
 

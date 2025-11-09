@@ -48,5 +48,17 @@ locals {
     "ssmmessages" = 443
   }
 
+  public_protocol_redirect = merge(
+
+    var.create_vpc_endpoints_and_load_balancer ? {
+      http = false
+    } : {},
+
+    (var.create_vpc_endpoints_and_load_balancer && var.enable_https) ? {
+      https = false
+      http  = true
+    } : {},
+  )
+
   cloudformation_path = "${path.module}/cloudformation"
 }

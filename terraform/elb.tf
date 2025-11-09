@@ -88,22 +88,8 @@ module "hello_api_tls_certificate" {
   ]
 }
 
-locals {
-  protocol_redirect = merge(
-
-    var.create_vpc_endpoints_and_load_balancer ? {
-      http = false
-    } : {},
-
-    (var.create_vpc_endpoints_and_load_balancer && var.enable_https) ? {
-      https = false
-      http  = true
-    } : {},
-  )
-}
-
 resource "aws_lb_listener" "hello_api" {
-  for_each = local.protocol_redirect
+  for_each = local.public_protocol_redirect
 
   region            = local.aws_region_main
   load_balancer_arn = aws_lb.hello_api[0].arn
