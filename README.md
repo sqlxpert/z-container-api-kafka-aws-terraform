@@ -271,8 +271,6 @@ Jump to:
     AWS_ECR_REPOSITORY_URL=$(terraform output -raw 'hello_api_aws_ecr_repository_url')
     HELLO_API_AWS_ECR_IMAGE_TAG=$(terraform output -raw 'hello_api_aws_ecr_image_tag')
 
-    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
-
     aws ecr get-login-password --region "${AWS_ECR_REGISTRY_REGION}" | sudo docker login --username 'AWS' --password-stdin "${AWS_ECR_REGISTRY_URI}"
 
     cd ../python_docker
@@ -322,6 +320,8 @@ Jump to:
  9. Generate the URLs and then test your API.
 
     ```shell
+    cd ../terraform
+    HELLO_API_DOMAIN_NAME=$(terraform output -raw 'hello_api_load_balander_domain_name') # For later
     echo -e "curl --location --insecure 'http://${HELLO_API_DOMAIN_NAME}/"{'healthcheck','hello','current_time?name=Paul','current_time?name=;echo','error'}"'\n"
 
     ```
@@ -330,7 +330,7 @@ Jump to:
     `curl --location --insecure`
     (these options allow redirection and self-signed TLS certificates).
 
-    |Method and Paremeters|Result Expected|
+    |Method, parameters|Result expected|
     |:---|:---|
     |`/healthcheck`|Empty response|
     |`/hello`|Fixed greeting, in a JSON object|
