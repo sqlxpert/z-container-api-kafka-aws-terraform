@@ -213,7 +213,12 @@ resource "aws_security_group" "hello" {
   for_each = local.security_group_keys_set
 
   lifecycle {
-    create_before_destroy = true
+    ignore_changes = [
+      name,
+      description,
+      # A change to either of these would require deletion and re-creation of
+      # the security group, untenable while references exist
+    ]
   }
 
   region = local.aws_region_main
