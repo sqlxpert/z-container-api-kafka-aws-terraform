@@ -87,12 +87,15 @@ locals {
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_vpc_subnets" {
   for_each = local.subnet_keys_set
 
+  description = "hello VPC ${each.key} subnet private addresses"
+
   depends_on = [
     aws_vpc_ipam_pool_cidr.hello_vpc_subnets,
   ]
 
   lifecycle {
     ignore_changes = [
+      description,
       cidr,
     ]
   }
