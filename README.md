@@ -1,6 +1,6 @@
 # Containerized Python API, Kafka, AWS Lambda Consumer
 
-Hello! This is a high-quality containerized **Python API &rarr; managed Kafka
+Hello! This is a high-quality **containerized Python API &rarr; managed Kafka
 cluster &rarr; AWS Lambda consumer function** reference architecture,
 provisioned with Terraform. (CloudFormation is used indirectly, for a modular
 Kafka consumer stack.) I hope you will be able to adapt it for your own
@@ -253,12 +253,12 @@ Jump to:
 
     <br/>
 
-    - If you receive a "RepositoryAlreadyExistsException: The repository with
-      name 'hello_api' already exists", set
+    - If you receive a "**RepositoryAlreadyExistsException**: The repository
+      with name 'hello_api' already exists", set
       `create_aws_ecr_repository = false`&nbsp;.
 
-    - If you receive a "Registry with name `lambda-testevent-schemas` already
-      exists" error, set
+    - If you receive a "**ConflictException**: Registry with name
+      lambda-testevent-schemas already exists", set
       `create_lambda_testevent_schema_registry = false`&nbsp;.
 
     After changing the variable(s), run `terraform apply` again.
@@ -435,10 +435,10 @@ Jump to:
 
     </details>
 
-13. Access the `/current_time?name=Paul` method several times (adjust the name
-    parameter as you wish). The first use of this method prompts creation of
-    the `events` Kafka topic. From now on, use of this method (not the others)
-    will send a message to the `events` Kafka topic.
+13. Access the `/current_time?name=Paul` method several times (adjust the
+    `name` parameter as you wish). The first use of this method prompts
+    creation of the `events` Kafka topic. From now on, use of this method (not
+    the other methods) will send a message to the `events` Kafka topic.
 
     The [AWS MSK event source mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
     reads from the Kafka topic and triggers the consumer Lambda function, which
@@ -473,10 +473,12 @@ Jump to:
     - Harmless "Invalid target address" errors will occur in some
       configurations.
 
-    - If you receive a "RepositoryNotEmptyException", either delete your
-      container images or, if you wish to preserve them, remove the ECR
-      repository from Terraform state (the command is provided, but is
-      commented-out). Run `terraform apply -destroy` again.
+    - A _newly-created_ ECR repository is deleted along with any images (unless
+      you explicitly removed it from Terraform state), but if you _imported_
+      your previously-created ECR repository and it contains images, you will
+      receive a "**RepositoryNotEmptyException**". Either delete the images or
+      remove the ECR repository from Terraform state. Run
+      `terraform apply -destroy` again.
 
     - Deleting a VPC Lambda function takes a long time because of the network
       association; expect 30&nbsp;minutes if `enable_kafka` was `true`&nbsp;.

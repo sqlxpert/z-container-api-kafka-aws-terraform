@@ -206,8 +206,8 @@ locals {
       {
         for client in clients :
         join(":", [client, service]) => {
-          "client" : client
-          "service" : service
+          "client"        = client
+          "service"       = service
           "endpoint_type" = endpoint_type # No ../ back-reference, so duplicate
         }
       }
