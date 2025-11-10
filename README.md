@@ -155,10 +155,6 @@ Jump to:
 
     ```shell
     sudo dnf --assumeyes install 'dnf-command(config-manager)'
-
-    ```
-
-    ```shell
     sudo dnf config-manager --add-repo 'https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo'
     # sudo dnf --assumeyes install terraform-1.10.0-1
     sudo dnf --assumeyes install terraform
@@ -289,6 +285,38 @@ Jump to:
 
     ```shell
     sudo docker push "${AWS_ECR_REPOSITORY_URL}:${HELLO_API_AWS_ECR_IMAGE_TAG}"
+
+    ```
+
+    In case you have _not_ configured ECR for automatic security scanning on
+    image push, you may be able to initiate a free, AWS-native, operating
+    system-level vulnerability scan once per image per day. If you have
+    opted-in to enhanced scanning, a paid feature, manual scanning is not
+    possible. See
+    [Scan images for software vulnerabilities in Amazon ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html)
+    for the range of options.
+
+    ```shell
+    aws ecr start-image-scan --repository-name 'hello_api' --image-id "imageTag=${HELLO_API_AWS_ECR_IMAGE_TAG}"
+
+    ```
+
+    Carefully review findings from an automatic or manual scan. You can resolve
+    most or all operating system-level findings by specifying the version
+    number and digest that correspond to the latest Amazon Linux 2023 release.
+    Its tag is `2023`&nbsp;, not the usual "latest". Resolving Python-level
+    findings might be as simple as picking up newer versions of secondary
+    dependencies, or it might require updating module version numbers for
+    primary dependencies, in:
+    - [`/python_docker/requirements.txt`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/requirements.txt) (more likely) _or_
+    - [`/python_docker/Dockerfile`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/Dockerfile) (less likely).
+
+    Note:
+    [AWS Lambda automatically applies security updates](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html)
+    to the Lambda runtime for the Kafka consumer function.
+
+    ```shell
+    aws ecr describe-image-scan-findings --repository-name 'hello_api' --image-id "imageTag=${HELLO_API_AWS_ECR_IMAGE_TAG}"
 
     ```
 
