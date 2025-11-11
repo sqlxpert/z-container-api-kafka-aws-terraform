@@ -136,7 +136,7 @@ module "hello_vpc_subnets" {
   version = "2.4.2"
 
   name    = "hello"
-  enabled = true
+  enabled = true # Prefer module.count , which relies solely on HCL.
 
   vpc_id = module.hello_vpc[count.index].vpc_id
   igw_id = [module.hello_vpc[count.index].igw_id]
