@@ -341,7 +341,7 @@ resource "aws_vpc_security_group_ingress_rule" "hello" {
 
 
 resource "aws_vpc_security_group_ingress_rule" "hello_public" {
-  for_each = toset(var.create_vpc ? keys(local.public_protocol_redirect) : [])
+  for_each = toset(keys(local.public_protocol_redirect))
 
   region            = local.aws_region_main
   security_group_id = aws_security_group.hello["hello_api_public"].id
