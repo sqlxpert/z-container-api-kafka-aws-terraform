@@ -343,7 +343,7 @@ Jump to:
     </details>
 
  7. _If_ you changed Terraform variables at the end of Step&nbsp;3, revert the
-    changes and run `terraform apply`&nbsp;.
+    changes and run _both_ `terraform apply` commands from Step&nbsp;5.
 
  8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
