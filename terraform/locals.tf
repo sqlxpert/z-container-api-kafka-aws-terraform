@@ -50,11 +50,11 @@ locals {
 
   public_protocol_redirect = merge(
 
-    var.create_vpc_endpoints_and_load_balancer ? {
+    var.create_vpc ? {
       http = false
     } : {},
 
-    (var.create_vpc_endpoints_and_load_balancer && var.enable_https) ? {
+    (var.create_vpc && var.enable_https) ? {
       https = false
       http  = true
     } : {},

@@ -188,7 +188,7 @@ Jump to:
 
     _Optional:_ To save money while building the Docker container image, set
     `hello_api_aws_ecs_service_desired_count_tasks = 0` and
-    `create_vpc_endpoints_and_load_balancer = false`&nbsp;.
+    `create_vpc = false`&nbsp;.
 
  4. In CloudShell (optional if you chose EC2), create an override file to
     configure your Terraform S3 backend.
@@ -343,7 +343,7 @@ Jump to:
     </details>
 
  7. _If_ you changed Terraform variables at the end of Step&nbsp;3, revert the
-    changes and run `terraform apply`&nbsp;.
+    changes and run _both_ `terraform apply` commands from Step&nbsp;5.
 
  8. In the Amazon Elastic Container Service section of the AWS Console, check
     the `hello_api` cluster. Eventually, you should see 2&nbsp;tasks running.
@@ -478,9 +478,8 @@ Jump to:
     CloudWatch log group.
 
 14. If you wish to continue experimenting, set the `enable_kafka`&nbsp;,
-    `hello_api_aws_ecs_service_desired_count_tasks` and
-    `create_vpc_endpoints_and_load_balancer` variables to their cost-saving
-    values and run `terraform apply`&nbsp;.
+    `hello_api_aws_ecs_service_desired_count_tasks` and `create_vpc` variables
+    to their cost-saving values and run `terraform apply`&nbsp;.
 
     When you are finished, delete all resources; the minimum configuration
     carries a cost.

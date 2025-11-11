@@ -5,6 +5,8 @@
 
 
 resource "aws_vpc_ipam" "hello_vpc" {
+  count = var.create_vpc ? 1 : 0
+
   description = "hello VPC"
 
   region = local.aws_region_main
@@ -16,19 +18,23 @@ resource "aws_vpc_ipam" "hello_vpc" {
 
 
 resource "aws_vpc_ipam_pool" "hello_vpc" {
+  count = var.create_vpc ? 1 : 0
+
   description = "hello VPC private addresses"
 
   locale        = local.aws_region_main
   region        = local.aws_region_main
-  ipam_scope_id = aws_vpc_ipam.hello_vpc.private_default_scope_id
+  ipam_scope_id = aws_vpc_ipam.hello_vpc[count.index].private_default_scope_id
 
   address_family = "ipv4"
   auto_import    = false
 }
 
 resource "aws_vpc_ipam_pool_cidr" "hello_vpc" {
+  count = var.create_vpc ? 1 : 0
+
   region       = local.aws_region_main
-  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc.id
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc[count.index].id
 
   lifecycle {
     ignore_changes = [
@@ -46,13 +52,15 @@ resource "aws_vpc_ipam_pool_cidr" "hello_vpc" {
 }
 
 module "hello_vpc" {
+  count = var.create_vpc ? 1 : 0
+
   source  = "cloudposse/vpc/aws"
   version = "3.0.0"
 
   name    = "hello"
-  enabled = true
+  enabled = true # Prefer module.count , which relies solely on HCL.
 
-  ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
+  ipv4_primary_cidr_block          = aws_vpc_ipam_pool_cidr.hello_vpc[count.index].cidr
   assign_generated_ipv6_cidr_block = false
 
   default_security_group_deny_all = true
@@ -61,12 +69,14 @@ module "hello_vpc" {
 
 
 resource "aws_vpc_ipam_pool" "hello_vpc_subnets" {
+  count = var.create_vpc ? 1 : 0
+
   description = "hello VPC subnet private addresses"
 
   locale              = local.aws_region_main
   region              = local.aws_region_main
-  source_ipam_pool_id = aws_vpc_ipam_pool.hello_vpc.id
-  ipam_scope_id       = aws_vpc_ipam.hello_vpc.private_default_scope_id
+  source_ipam_pool_id = aws_vpc_ipam_pool.hello_vpc[count.index].id
+  ipam_scope_id       = aws_vpc_ipam.hello_vpc[count.index].private_default_scope_id
 
   address_family                    = "ipv4"
   allocation_default_netmask_length = var.vpc_subnet_netmask_length
@@ -74,8 +84,10 @@ resource "aws_vpc_ipam_pool" "hello_vpc_subnets" {
 }
 
 resource "aws_vpc_ipam_pool_cidr" "hello_vpc_subnets" {
+  count = var.create_vpc ? 1 : 0
+
   region       = local.aws_region_main
-  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets[count.index].id
 
   lifecycle {
     ignore_changes = [
@@ -83,7 +95,7 @@ resource "aws_vpc_ipam_pool_cidr" "hello_vpc_subnets" {
     ]
   }
 
-  cidr = aws_vpc_ipam_pool_cidr.hello_vpc.cidr
+  cidr = aws_vpc_ipam_pool_cidr.hello_vpc[count.index].cidr
 }
 
 locals {
@@ -98,7 +110,7 @@ locals {
 }
 
 resource "aws_vpc_ipam_pool_cidr_allocation" "hello_vpc_subnets" {
-  for_each = local.subnet_keys_set
+  for_each = var.create_vpc ? local.subnet_keys_set : toset([])
 
   description = "hello VPC ${each.key} subnet private addresses"
 
@@ -114,18 +126,20 @@ resource "aws_vpc_ipam_pool_cidr_allocation" "hello_vpc_subnets" {
   }
 
   region       = local.aws_region_main
-  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets.id
+  ipam_pool_id = aws_vpc_ipam_pool.hello_vpc_subnets[0].id
 }
 
 module "hello_vpc_subnets" {
+  count = var.create_vpc ? 1 : 0
+
   source  = "cloudposse/dynamic-subnets/aws"
   version = "2.4.2"
 
   name    = "hello"
-  enabled = true
+  enabled = true # Prefer module.count , which relies solely on HCL.
 
-  vpc_id = module.hello_vpc.vpc_id
-  igw_id = [module.hello_vpc.igw_id]
+  vpc_id = module.hello_vpc[count.index].vpc_id
+  igw_id = [module.hello_vpc[count.index].igw_id]
   ipv4_cidrs = [{
     for subnet_scope, subnet_keys in local.subnet_scope_to_keys :
     subnet_scope => sort([
@@ -226,7 +240,7 @@ locals {
 # group rules show the physical names of referenced security groups.
 
 resource "aws_security_group" "hello" {
-  for_each = local.security_group_keys_set
+  for_each = var.create_vpc ? local.security_group_keys_set : toset([])
 
   lifecycle {
     ignore_changes = [
@@ -252,17 +266,13 @@ resource "aws_security_group" "hello" {
     "- hello VPC"
   ])
 
-  vpc_id = module.hello_vpc.vpc_id
+  vpc_id = module.hello_vpc[0].vpc_id
 }
 
 
 
 resource "aws_vpc_endpoint" "hello" {
-  for_each = (
-    var.create_vpc_endpoints_and_load_balancer
-    ? local.aws_service_to_endpoint_type
-    : {}
-  )
+  for_each = var.create_vpc ? local.aws_service_to_endpoint_type : {}
 
   vpc_endpoint_type = each.value
 
@@ -274,26 +284,19 @@ resource "aws_vpc_endpoint" "hello" {
     each.key
   ])
 
-  subnet_ids          = each.value == "Interface" ? module.hello_vpc_subnets.private_subnet_ids : null
+  subnet_ids          = each.value == "Interface" ? module.hello_vpc_subnets[0].private_subnet_ids : null
   security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
   private_dns_enabled = each.value == "Interface" ? true : null
 
-  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets.private_route_table_ids : null
+  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets[0].private_route_table_ids : null
 
-  vpc_id = module.hello_vpc.vpc_id
+  vpc_id = module.hello_vpc[0].vpc_id
 }
 
 
 
 resource "aws_vpc_security_group_egress_rule" "hello" {
-  for_each = merge(
-    local.endpoint_type_to_flows["Custom"],
-    local.endpoint_type_to_flows["Interface"],
-
-    var.create_vpc_endpoints_and_load_balancer
-    ? local.endpoint_type_to_flows["Gateway"]
-    : {},
-  )
+  for_each = var.create_vpc ? merge(values(local.endpoint_type_to_flows)...) : {}
 
   region            = local.aws_region_main
   security_group_id = aws_security_group.hello[each.value["client"]].id
@@ -320,10 +323,10 @@ resource "aws_vpc_security_group_egress_rule" "hello" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "hello" {
-  for_each = merge(
+  for_each = var.create_vpc ? merge(
     local.endpoint_type_to_flows["Custom"],
     local.endpoint_type_to_flows["Interface"],
-  )
+  ) : {}
 
   region            = local.aws_region_main
   security_group_id = aws_security_group.hello[each.value["service"]].id

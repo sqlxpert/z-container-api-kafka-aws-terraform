@@ -3,7 +3,7 @@
 # GPLv3, Copyright Paul Marcelin
 
 resource "aws_lb" "hello_api" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+  count = var.create_vpc ? 1 : 0
 
   region             = local.aws_region_main
   name               = "hello-api"
@@ -11,7 +11,7 @@ resource "aws_lb" "hello_api" {
 
   internal        = false
   ip_address_type = "ipv4"
-  subnets         = module.hello_vpc_subnets.public_subnet_ids
+  subnets         = module.hello_vpc_subnets[count.index].public_subnet_ids
 
   security_groups = [
     aws_security_group.hello["hello_api_public"].id,
@@ -27,12 +27,12 @@ resource "aws_lb" "hello_api" {
 }
 
 resource "aws_lb_target_group" "hello_api" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+  count = var.create_vpc ? 1 : 0
 
   region = local.aws_region_main
   name   = "hello-api"
 
-  vpc_id      = module.hello_vpc.vpc_id
+  vpc_id      = module.hello_vpc[count.index].vpc_id
   target_type = "ip"
   port        = local.tcp_ports["hello_api_private"]
   protocol    = "HTTP"
@@ -54,10 +54,12 @@ resource "aws_lb_target_group" "hello_api" {
 
 
 module "hello_api_tls_certificate" {
+  count = (var.create_vpc && var.enable_https) ? 1 : 0
+
   source  = "cloudposse/ssm-tls-self-signed-cert/aws"
   version = "1.3.0"
 
-  enabled = var.enable_https
+  enabled = true # Prefer module.count , which relies solely on HCL.
 
   certificate_backends = ["ACM"]
   certificate_chain = {
@@ -90,7 +92,7 @@ resource "aws_lb_listener" "hello_api" {
   port     = tostring(local.tcp_ports[each.key])
 
   ssl_policy      = each.key == "https" ? "ELBSecurityPolicy-TLS13-1-2-Res-2021-06" : null
-  certificate_arn = each.key == "https" ? module.hello_api_tls_certificate.certificate_arn : null
+  certificate_arn = each.key == "https" ? module.hello_api_tls_certificate[0].certificate_arn : null
 
   default_action {
     type = each.value ? "redirect" : "forward"
