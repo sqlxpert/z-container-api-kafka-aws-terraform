@@ -127,6 +127,8 @@ resource "aws_ecs_task_definition" "hello_api" {
 }
 
 resource "aws_ecs_service" "hello_api" {
+  count = var.create_vpc ? 1 : 0
+
   region  = local.aws_region_main
   cluster = aws_ecs_cluster.hello_api.id
   name    = "hello_api"
@@ -141,7 +143,7 @@ resource "aws_ecs_service" "hello_api" {
 
   availability_zone_rebalancing = "ENABLED"
   network_configuration {
-    subnets          = module.hello_vpc_subnets.private_subnet_ids
+    subnets          = module.hello_vpc_subnets[count.index].private_subnet_ids
     assign_public_ip = false
 
     security_groups = [

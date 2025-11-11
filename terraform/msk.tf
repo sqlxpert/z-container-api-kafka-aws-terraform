@@ -9,7 +9,7 @@ resource "aws_msk_serverless_cluster" "hello_api" {
   cluster_name = "hello-api"
 
   vpc_config {
-    subnet_ids = module.hello_vpc_subnets.private_subnet_ids
+    subnet_ids = module.hello_vpc_subnets[count.index].private_subnet_ids
     security_group_ids = [
       aws_security_group.hello["kafka"].id,
 

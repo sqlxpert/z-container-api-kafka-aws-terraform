@@ -3,7 +3,7 @@
 # GPLv3, Copyright Paul Marcelin
 
 resource "aws_lb" "hello_api" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+  count = var.create_vpc ? 1 : 0
 
   region             = local.aws_region_main
   name               = "hello-api"
@@ -11,7 +11,7 @@ resource "aws_lb" "hello_api" {
 
   internal        = false
   ip_address_type = "ipv4"
-  subnets         = module.hello_vpc_subnets.public_subnet_ids
+  subnets         = module.hello_vpc_subnets[count.index].public_subnet_ids
 
   security_groups = [
     aws_security_group.hello["hello_api_public"].id,
@@ -27,12 +27,12 @@ resource "aws_lb" "hello_api" {
 }
 
 resource "aws_lb_target_group" "hello_api" {
-  count = var.create_vpc_endpoints_and_load_balancer ? 1 : 0
+  count = var.create_vpc ? 1 : 0
 
   region = local.aws_region_main
   name   = "hello-api"
 
-  vpc_id      = module.hello_vpc.vpc_id
+  vpc_id      = module.hello_vpc[count.index].vpc_id
   target_type = "ip"
   port        = local.tcp_ports["hello_api_private"]
   protocol    = "HTTP"
