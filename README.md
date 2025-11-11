@@ -288,54 +288,57 @@ Jump to:
 
     ```
 
+    <details>
+      <summary>Scanning and updating the container image...</summary>
+
+    <br/>
+
     In case you have _not_ configured ECR for automatic security scanning on
-    image push, you may be able to initiate a free, AWS-native, operating
-    system-level vulnerability scan once per image per day. If you have
-    opted-in to enhanced scanning, a paid feature, manual scanning is not
-    possible. See
+    image push, you may be able to initiate a free operating system-level
+    vulnerability scan once per image per day. If you have opted-in to paid,
+    enhanced scanning, you cannot initiate a scan manually. See
     [Scan images for software vulnerabilities in Amazon ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html)
-    for the range of options.
+    for all options.
 
     ```shell
     aws ecr start-image-scan --repository-name 'hello_api' --image-id "imageTag=${HELLO_API_AWS_ECR_IMAGE_TAG}"
 
     ```
 
-    Carefully review findings from an automatic or manual scan. You can resolve
-    most or all operating system-level findings by specifying the version
-    number and digest that correspond to the latest Amazon Linux 2023 release.
-    Its tag is `2023`&nbsp;, not the usual "latest". Resolving Python-level
-    findings might be as simple as picking up newer versions of secondary
-    dependencies, or it might require updating module version numbers for
-    primary dependencies, in:
-    - [`/python_docker/requirements.txt`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/requirements.txt) (more likely) _or_
-    - [`/python_docker/Dockerfile`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/Dockerfile) (less likely).
-
-    Note:
-    [AWS Lambda automatically applies security updates](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html)
-    to the Lambda runtime for the Kafka consumer function.
+    Carefully review findings from a manual or automatic vulnerability scan.
 
     ```shell
     aws ecr describe-image-scan-findings --repository-name 'hello_api' --image-id "imageTag=${HELLO_API_AWS_ECR_IMAGE_TAG}"
 
     ```
 
-    <details>
-      <summary>Updating the container image...</summary>
+    You can resolve most or all operating system-level findings by specifying
+    the version number and digest that correspond to the latest Amazon Linux
+    2023 release. Its tag is `2023`&nbsp;, not the usual "latest". Resolving
+    Python-level findings (from a paid, enhanced scan) might be as simple as
+    re-building to pick up newer versions of secondary dependencies, or it
+    might require updating primary module version numbers, in:
 
-    <br/>
+    - [`/python_docker/requirements.txt`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/requirements.txt)
+      _or_
+    - [`/python_docker/Dockerfile`](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/main/python_docker/Dockerfile)&nbsp;.
 
-    - You can select a newer Amazon Linux release by setting the
-      `amazon_linux_base_version` and `amazon_linux_base_digest` variables in
-      Terraform, running `terraform apply`&nbsp;, and re-setting the
-      environment variables.
+    Note: For the Kafka consumer function,
+    [AWS Lambda automatically applies security updates](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html)
+    to the Lambda runtime.
 
-      Then, to re-build the image, run `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
-      (choose an appropriate new version number, taking
-      [semantic&nbsp;versioning](https://semver.org/#semantic-versioning-specification-semver)
-      into account) in the shell, repeat the build and push commands, set
-      `hello_api_aws_ecr_image_tag = "1.0.1"` (for example) in Terraform, and
-      run `terraform apply` one more time.
+    Set the `amazon_linux_base_version` and `amazon_linux_base_digest`
+    variables in Terraform, run `terraform apply`&nbsp;, and re-set the
+    environment variables.
+
+    Then, to re-build the image, run `HELLO_API_AWS_ECR_IMAGE_TAG='1.0.1'`
+    (choose an appropriate new version number, taking
+    [semantic&nbsp;versioning](https://semver.org/#semantic-versioning-specification-semver)
+    into account) in the shell and repeat the build and push commands.
+
+    To deploy the new image version, set
+    `hello_api_aws_ecr_image_tag = "1.0.1"` (for example) in Terraform and
+    run `terraform apply` one more time.
 
     </details>
 
