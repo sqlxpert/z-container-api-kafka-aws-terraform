@@ -32,7 +32,7 @@ output "hello_api_aws_ecr_image_tag" {
 
 output "hello_api_load_balander_domain_name" {
   value       = try(aws_lb.hello_api[0].dns_name, "NOT_ENABLED")
-  description = "Domain name (on the public Internet) of the hello_api load balancer. Use this to connect. If create_vpc is false , this will read NOT_ENABLED"
+  description = "Domain name (on the public Internet) of the hello_api load balancer. Use this to connect. If create_vpc is false , this will read NOT_ENABLED ."
   sensitive   = false
   ephemeral   = false
 }
