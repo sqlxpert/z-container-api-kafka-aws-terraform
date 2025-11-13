@@ -53,7 +53,7 @@ Jump to:
 </details>
 
 <details name="innovations">
-  <summary>Compatible with Continuous integration/continuous deployment (CI/CD)</summary>
+  <summary>Compatible with continuous integration/continuous deployment (CI/CD)</summary>
 
 - Getting container image build properties from Terraform&nbsp;variables allows
   separate versions for development, testing and blue/green deployment
