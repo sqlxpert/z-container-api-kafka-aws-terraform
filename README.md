@@ -46,7 +46,8 @@ Jump to:
 
 - Security group rules refer to other named security groups rather than ranges
   of numeric addresses; only known pairs of resources can communicate
-- AWS service endpoints keep traffic on the private network
+- [PrivateLink endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html)
+  keep AWS service traffic on the private network
 - Private resources have no public Internet access
 
 </details>
@@ -86,8 +87,8 @@ Jump to:
 <details name="innovations">
   <summary>Low-code</summary>
 
-- API methods, parameters and input validation rules are defined in
-  declaratively, in a standard
+- API methods, parameters and input validation rules are defined declaratively,
+  in a standard
   [OpenAPI specification](https://learn.openapis.org/introduction.html#api-description-using-the-oas);
   API code need only process requests
 
