@@ -56,7 +56,7 @@ Jump to:
   <summary>Compatible with Continuous integration/continuous deployment (CI/CD)</summary>
 
 - Getting container image build properties from Terraform&nbsp;variables allows
-  separate version for development, testing and blue/green deployment
+  separate versions for development, testing and blue/green deployment
 - [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html)
   takes a single address range input and divides the space flexibly,
   accommodating multiple environments of different sizes
