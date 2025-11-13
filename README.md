@@ -6,47 +6,99 @@ provisioned with Terraform. (CloudFormation is used indirectly, for a modular
 Kafka consumer stack.) I hope you will be able to adapt it for your own
 projects, under the terms of the license.
 
+Jump to:
+[Installation](#installation)
+&bull;
+[Recommendations](#recommendations)
+&bull;
+[Licenses](#licenses)
+
 ## Innovations and Best Practices
 
-- Small image
-- Secure container
-- Secure private network
-- Low-code
-- Low-cost
-- Ready for continuous-integration/continuous-deployment
+<details name="innovations" open="true">
+  <summary>Low-cost</summary>
 
-<details>
-  <summary>Table of innovations and best practices...</summary>
+- Expensive AWS resources can be toggled off during development
+- [Spot pricing reduces compute costs up to 70%](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS)
+  even without a long-term, always-on Savings Plan commitment
+- ARM CPU architecture offers a
+  [better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton)
+  than Intel
 
-<br/>
+</details>
 
-|<br/>&check; Quality|~Typical&nbsp;approach~<br/>My&nbsp;work|<br/>Advantage|
-|:---|:---|:---|
-|<br/>**&check; Small image**|||
-|Package and module caches|~Cleared or disabled~<br/>[Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)|No bloat, _and_ no slow re-downloading on image re-build|
-|Temporary Python modules|~Retained~<br/>Uninstalled|Same discipline as for operating system packages|
-|Temporary software installation, usage, and removal|~Separate&nbsp;layers; maybe&nbsp;stages?~<br/>Same&nbsp;layer|Fewer, smaller layers, _without_ [multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds) complexity|
-|<br/>**&check; Secure container**|||
-|Base image|~Docker&nbsp;Community&nbsp;Python~<br/>Amazon&nbsp;Linux|Fewer vulnerabilities; frequent updates, _from AWS staff_; [deterministic&nbsp;OS&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)|
-|Image build platform|~Local computer~<br/>[AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)&nbsp;or&nbsp;EC2|Controlled, auditable environment; low malware risk|
-|Non-root user|~Maybe?~<br/>Yes|Less access if main process is compromised|
-|<br/>**&check; Secure private network**|||
-|Internet from private subnets|~NAT&nbsp;Gateway~<br/>No|Lower data exfiltration risk|
-|AWS service endpoints|~Public~<br/>Private|Traffic never leaves private network|
-|Security group rule scope|~Ranges&nbsp;of&nbsp;numbered&nbsp;addresses~<br/>Other&nbsp;named&nbsp;security&nbsp;groups|Only known pairs of resources can communicate|
-|<br/>**&check; Low-code**|||
-|API specification|~In program code~<br/>[OpenAPI document](https://learn.openapis.org/introduction.html#api-description-using-the-oas)|Standard and self-documenting; declarative input validation|
-|Serverless compute|~No~<br/>ECS&nbsp;Fargate|Fewer, simpler resource definitions; no platform-level patching|
-|Serverless Kafka consumer|~No~<br/>AWS&nbsp;Lambda|[AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview) handles Kafka; code receives JSON input (I re-used an SQS consumer CloudFormation template from my other projects!)|
-|<br/>**&check; Low-cost**|||
-|Compute pricing|~On-demand; maybe&nbsp;Savings&nbsp;Plan?~<br/>Spot&nbsp;discount|No commitment; [_EC2_&nbsp;Spot&nbsp;discounts](https://aws.amazon.com/ec2/spot/instance-advisor) are higher than [Savings&nbsp;Plan&nbsp;discounts](https://aws.amazon.com/savingsplans/compute-pricing) and [_Fargate_&nbsp;Spot&nbsp;pricing](https://aws.amazon.com/fargate/pricing#Fargate_Spot_Pricing_for_Amazon_ECS) works similarly|
-|CPU architecture|~Intel&nbsp;x86~<br/>ARM&nbsp;(AWS&nbsp;Graviton)|[Better&nbsp;price/performance&nbsp;ratio](https://aws.amazon.com/ec2/graviton); same [CPU&nbsp;off&#8209;load](https://aws.amazon.com/ec2/nitro)|
-|Expensive resources|~Always&nbsp;on~<br/>Conditional|Develop and test at the lowest AWS cost|
-|<br/>**&check; CI/CD-ready**|||
-|Image build properties|~Hard-coded~<br/>Terraform&nbsp;variables|Multiple versions can coexist, for testing and blue/green deployment|
-|Image build software platform|~MacOS~<br/>Amazon&nbsp;Linux|Ready for centralized building|
-|Private address allocation|~Fixed~<br/>Flexible|Specify one address space for [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html) to divide|
-|Lambda function tests|~In&nbsp;files~<br/>[Central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)|[Realistic, centrally&#8209;executed&nbsp;tests](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-invoke.html#using-sam-cli-remote-invoke-shareable) (see [shareable&nbsp;Lambda&nbsp;test](https://github.com/sqlxpert/docker-python-openapi-kafka-terraform-cloudformation-aws/blob/1edaa6a/cloudformation/kafka_consumer.yaml#L567-L598))|
+<details name="innovations">
+  <summary>Secure Docker container</summary>
+
+- Amazon Linux starts with fewer vulnerabilities, is updated frequently by AWS
+  staff, and uses
+  [deterministic&nbsp;operating&nbsp;system&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)
+- [AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
+  or EC2 provides a controlled, auditable environment for building container
+  images
+- The API server process runs as a non-root user, reducing the impact if it is
+  compromised
+
+</details>
+
+<details name="innovations">
+  <summary>Secure private network</summary>
+
+- Security group rules refer to other named security groups rather than ranges
+  of numeric addresses; only known pairs of resources can communicate
+- AWS service endpoints keep traffic on the private network
+- Private resources have no public Internet access
+
+</details>
+
+<details name="innovations">
+  <summary>Compatible with Continuous integration/continuous deployment (CI/CD)</summary>
+
+- Getting container image build properties from Terraform&nbsp;variables allows
+  separate version for development, testing and blue/green deployment
+- [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html)
+  takes a single address range input and divides the space flexibly,
+  accommodating multiple environments of different sizes
+- An AWS Lambda function test event in the
+  [central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
+  allow for realistic central testing
+- Amazon Linux on EC2 provides a consistent, central build platform
+
+</details>
+
+<details name="innovations">
+  <summary>Small Docker container image</summary>
+
+- [Docker&nbsp;cache&nbsp;mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)
+  prevent image bloat _and_ avoid slow re-downloading on re-build (other people
+  needlessly disable or empty operating system package and Python module
+  caches)
+- Temporary software is installed, used and removed in the same step,
+  minimizing the number of layers while avoiding
+  [multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds)
+  complexity
+- Temporary Python modules are uninstalled, just like temporary operating
+  system packages (other people leave `pip`&nbsp;, which will never be used
+  again!)
+
+</details>
+
+<details name="innovations">
+  <summary>Low-code</summary>
+
+- API methods, parameters and input validation rules are defined in
+  declaratively, in a standard
+  [OpenAPI specification](https://learn.openapis.org/introduction.html#api-description-using-the-oas);
+  API code need only process requests
+
+- A managed container service (ECS) and a serverless computing option (Fargate)
+  reduce infrastructure-as-code lines and eliminate scripts
+
+- The
+  [AWS&nbsp;event&nbsp;source&nbsp;mapping](https://docs.aws.amazon.com/lambda/latest/dg/with-msk-configure.html#msk-esm-overview)
+  interacts with Kafka, so that the consumer Lambda function need only process
+  JSON input (I re-used a simple _SQS_ consumer CloudFormation template from my
+  other projects!)
 
 </details>
 
