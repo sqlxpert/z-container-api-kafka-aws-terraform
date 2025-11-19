@@ -290,10 +290,10 @@ resource "aws_vpc_endpoint" "hello" {
   security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
   private_dns_enabled = each.value == "Interface" ? true : null
 
-  route_table_ids = each.value == "Gateway" ? [
+  route_table_ids = each.value == "Gateway" ? flatten([
     module.hello_vpc[0].vpc_main_route_table_id,
     module.hello_vpc_subnets[0].public_route_table_ids,
-  ] : null
+  ]) : null
 
   vpc_id = module.hello_vpc[0].vpc_id
 }
