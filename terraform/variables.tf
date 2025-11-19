@@ -111,13 +111,6 @@ variable "create_lambda_testevent_schema_registry" {
   default = true
 }
 
-variable "create_nat_gateway" {
-  type        = bool
-  description = "Whether to create a NAT Gateway (expensive). Gateway and interface endpoints, defined to support ECS Fargate, make the NAT Gateway unnecessary."
-
-  default = false
-}
-
 
 
 # I'd like to be able to get the initial Amazon Linux 2023 version and digest,

@@ -153,8 +153,10 @@ module "hello_vpc_subnets" {
 
   public_route_table_enabled            = true
   public_route_table_per_subnet_enabled = false
-  nat_gateway_enabled                   = var.create_nat_gateway
-  max_nats                              = 1
+  private_route_table_enabled           = false
+  nat_gateway_enabled                   = false
+  max_nats                              = 0
+  private_open_network_acl_enabled      = false
 }
 
 
@@ -288,7 +290,10 @@ resource "aws_vpc_endpoint" "hello" {
   security_group_ids  = each.value == "Interface" ? [aws_security_group.hello[each.key].id] : null
   private_dns_enabled = each.value == "Interface" ? true : null
 
-  route_table_ids = each.value == "Gateway" ? module.hello_vpc_subnets[0].private_route_table_ids : null
+  route_table_ids = each.value == "Gateway" ? [
+    module.hello_vpc[0].vpc_main_route_table_id,
+    module.hello_vpc_subnets[0].public_route_table_ids,
+  ] : null
 
   vpc_id = module.hello_vpc[0].vpc_id
 }
