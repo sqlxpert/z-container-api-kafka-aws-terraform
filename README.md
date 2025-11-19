@@ -46,13 +46,13 @@ Jump to:
 <details name="innovations">
   <summary>Secure private network</summary>
 
-- Security group rules refer to named security groups rather than ranges of
+- Security group rules reference named security groups rather than ranges of
   numeric addresses; only known pairs of resources can communicate
 
 - [PrivateLink endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html)
-  keep AWS service traffic on the private network
+  keep AWS API traffic off the public Internet
 
-- Private resources have no public Internet access
+- No public Internet access from private subnets
 
 </details>
 
