@@ -33,9 +33,11 @@ Jump to:
 - Amazon Linux starts with fewer vulnerabilities, is updated frequently by AWS
   staff, and uses
   [deterministic&nbsp;operating&nbsp;system&nbsp;package&nbsp;versions](https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades.html)
+
 - [AWS&nbsp;CloudShell](https://docs.aws.amazon.com/cloudshell/latest/userguide/welcome.html)
   or EC2 provides a controlled, auditable environment for building container
   images
+
 - The API server process runs as a non-root user, reducing the impact if it is
   compromised
 
@@ -44,11 +46,13 @@ Jump to:
 <details name="innovations">
   <summary>Secure private network</summary>
 
-- Security group rules refer to other named security groups rather than ranges
-  of numeric addresses; only known pairs of resources can communicate
+- Security group rules reference named security groups rather than ranges of
+  numeric addresses; only known pairs of resources can communicate
+
 - [PrivateLink endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html)
-  keep AWS service traffic on the private network
-- Private resources have no public Internet access
+  keep AWS API traffic off the public Internet
+
+- No public Internet access from private subnets
 
 </details>
 
@@ -57,12 +61,15 @@ Jump to:
 
 - Getting container image build properties from Terraform&nbsp;variables allows
   separate versions for development, testing and blue/green deployment
+
 - [AWS&nbsp;IP&nbsp;Address&nbsp;Manager&nbsp;(IPAM)](https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html)
   takes a single address range input and divides the space flexibly,
   accommodating multiple environments of different sizes
+
 - An AWS Lambda function test event in the
-  [central,&nbsp;shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
-  allow for realistic central testing
+  [shared&nbsp;registry](https://builder.aws.com/content/33YuiyDjF5jHyRUhjoma00QwwbM/cloudformation-and-terraform-for-realistic-shareable-aws-lambda-test-events)
+  allows realistic, centralized testing
+
 - Amazon Linux on EC2 provides a consistent, central build platform
 
 </details>
@@ -74,10 +81,12 @@ Jump to:
   prevent image bloat _and_ avoid slow re-downloading on re-build (other people
   needlessly disable or empty operating system package and Python module
   caches)
-- Temporary software is installed, used and removed in the same step,
-  minimizing the number of layers while avoiding
+
+- Temporary software is installed, used and removed in the same step, avoiding
+  extra layers _and_
   [multi&#8209;stage&nbsp;build](https://docs.docker.com/build/building/multi-stage#use-multi-stage-builds)
   complexity
+
 - Temporary Python modules are uninstalled, just like temporary operating
   system packages (other people leave `pip`&nbsp;, which will never be used
   again!)
